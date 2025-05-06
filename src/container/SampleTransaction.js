@@ -14,8 +14,12 @@ import { transactionValidation } from "../validation/transaction";
 import { ICONS } from "../constant/icons";
 import DropDown from "../common/DropDown";
 import AccountSummary from "../component/AccountSummary";
+import { getArrayValue } from "../utils/getArrayvalue";
+import usePagination from "../hooks/usePagination";
+import ReactPaginate from "react-paginate";
 
-const SampleTransaction = () => {
+const SampleTransaction = (props) => {
+  const { handleCancel } = props;
   const [transactionData, setTransactionData] = useState({
     billNo: "",
     date: moment(new Date()).format("YYYY-MM-DD"),
@@ -37,6 +41,12 @@ const SampleTransaction = () => {
   const [location, setLocation] = useState([]);
 
   const [billData, setBillData] = useState([]);
+  const [handlePageClick, currentItems, pageCount] = usePagination(
+    10,
+    billData
+  );
+  const [printDataCount, setPrintDataCount] = useState([]);
+
   const [dateFilter, setDateFilter] = useState(new Date());
   const componentRef = useRef(null);
   const [billPdfData, setBillPdfData] = useState({});
@@ -45,15 +55,23 @@ const SampleTransaction = () => {
   const [current, setCurrent] = useState({
     billNo: "",
     propertiesId: "",
+    transactionProperyId: "",
   });
   const [formError, setFormError] = useState({});
+  const [editBill, setEditBill] = useState({
+    flag: false,
+    id: undefined,
+  });
+  const [editNewProperty, setEditNewProperty] = useState([]);
 
   useEffect(() => {
     fetchBill();
   }, [dateFilter]);
 
   useEffect(() => {
-    fetchMonthBill();
+    if (!editBill.flag) {
+      fetchMonthBill();
+    }
   }, [transactionData.date]);
 
   const fetchBill = () => {
@@ -63,7 +81,6 @@ const SampleTransaction = () => {
       let parsedData = JSON.parse(data);
 
       const updatedData = mergeProperties(parsedData);
-      console.log(JSON.parse(JSON.stringify(updatedData, null, 2)));
 
       setBillData(JSON.parse(data));
     });
@@ -100,23 +117,21 @@ const SampleTransaction = () => {
 
   const fetchMonthBill = () => {
     ipcRenderer.send("billCount:load", transactionData.date);
-
     ipcRenderer.on("billCount:success", (e, data) => {
       let res = JSON.parse(data);
-
       ipcRenderer.send("location:load");
-
       ipcRenderer.on("location:success", async (e, data) => {
         let locationsData = JSON.parse(data);
-
         setLocation(locationsData);
-
         let findLocation = locationsData.find((ele) => ele.isDefault);
-
         setTransactionData({
+          ...transactionData,
           date: moment(transactionData.date).format("YYYY-MM-DD"),
           sampleId: "",
-          locationId: { label: findLocation.location, value: findLocation._id },
+          locationId: {
+            label: findLocation.location,
+            value: findLocation._id,
+          },
           partyId: "",
           properties: [],
           billNo: parseInt(res.total_records) + 1,
@@ -151,7 +166,7 @@ const SampleTransaction = () => {
       ipcRenderer.on("getSampleProperty:success", (e, data) => {
         let parsedData = JSON.parse(data);
 
-        setPropertyList(parsedData);
+        setPropertyList([{ _id: "", name: "select.." }, ...parsedData]);
 
         let defaultProperty = parsedData.filter((ele) => ele.isDefault);
 
@@ -166,16 +181,37 @@ const SampleTransaction = () => {
           };
         });
 
-        setTransactionData({
-          ...transactionData,
-          properties: defaultPropertyData,
-        });
+        if (!editBill.flag) {
+          setTransactionData({
+            ...transactionData,
+            properties: defaultPropertyData,
+          });
 
-        let total = defaultPropertyData.reduce((acc, curr) => {
-          return acc + parseInt(curr.price);
-        }, 0);
+          let total = defaultPropertyData.reduce((acc, curr) => {
+            return acc + parseInt(curr.price);
+          }, 0);
 
-        setTotalPrice(total);
+          setTotalPrice(total);
+        } else {
+          let updatedTransaction = transactionData.properties.map((ele) => {
+            return {
+              ...ele,
+              isDefault: true,
+              pid: { label: ele.propertyName, value: ele.pid },
+            };
+          });
+
+          setTransactionData({
+            ...transactionData,
+            properties: updatedTransaction,
+          });
+
+          let total = transactionData.properties.reduce((acc, curr) => {
+            return acc + parseInt(curr.price);
+          }, 0);
+
+          setTotalPrice(total);
+        }
       });
     }
   }, [transactionData.sampleId.value]);
@@ -270,20 +306,42 @@ const SampleTransaction = () => {
             remark: ele.remark,
             unit: ele.unit,
             paid: ele.paid || false,
+            transactionProperyId: ele.transactionProperyId,
           };
         }), // propertyList,
       };
 
-      ipcRenderer.send("addBill:load", updatedObj);
-      ipcRenderer.on("addBill:success", (e, data) => {
-        console.log("data after save", data);
-        console.log("e", e);
+      if (editBill.flag) {
+        ipcRenderer.send("updateBill:load", {
+          updateSave: {
+            ...updatedObj,
+            transactionId: transactionData.transactionId,
+            createdAt: moment(new Date()).format("YYYY-MM-DD"),
+          },
+          newEdit: editNewProperty.map((ele) => {
+            return { ...ele, pid: ele.pid.value };
+          }),
+        });
+        ipcRenderer.on("updateBill:success", (e, data) => {
+          let parsedData = JSON.parse(data);
 
-        toast.success("Bill Added Successfully.");
-        fetchBill();
-        setTotalPrice(0);
-        fetchMonthBill();
-      });
+          if (parsedData.success) {
+            toast.success("Bill Updated Successfully.");
+            fetchBill();
+            setTotalPrice(0);
+            fetchMonthBill();
+            setEditNewProperty([]);
+          }
+        });
+      } else {
+        ipcRenderer.send("addBill:load", updatedObj);
+        ipcRenderer.on("addBill:success", (e, data) => {
+          toast.success("Bill Added Successfully.");
+          fetchBill();
+          setTotalPrice(0);
+          fetchMonthBill();
+        });
+      }
     } else {
       setFormError(formError);
     }
@@ -296,13 +354,76 @@ const SampleTransaction = () => {
 
   const handleBeforePrint = useCallback(() => {
     console.log("`onBeforePrint` called");
+
+    setPrintDataCount([]);
     return Promise.resolve();
   }, []);
 
   const handleId = (e, id) => {
-    let findData = billData.find((ele) => ele.transactionId === id);
+    if (printDataCount.length > 0) {
+      console.log("print count", printDataCount);
 
-    setBillPdfData(findData);
+      let filteredData = billData.filter((ele, index) =>
+        printDataCount.includes(index)
+      );
+
+      function getKey(obj) {
+        return (
+          obj.companyName.toLowerCase().trim() + "|" + obj.sampleName.trim()
+        );
+      }
+
+      function getPropertyIds(obj) {
+        return obj.properties.map((p) => p.pid);
+      }
+
+      const groups = {};
+
+      filteredData.forEach((obj) => {
+        const key = getKey(obj);
+        if (!groups[key]) {
+          groups[key] = [];
+        }
+        groups[key].push(obj);
+      });
+
+      const result = [];
+
+      Object.values(groups).forEach((group) => {
+        // Check if any pair inside group shares at least one property
+        for (let i = 0; i < group.length; i++) {
+          for (let j = i + 1; j < group.length; j++) {
+            const pidsA = getPropertyIds(group[i]);
+            const pidsB = getPropertyIds(group[j]);
+
+            const hasCommonPid = pidsA.some((pid) => pidsB.includes(pid));
+
+            if (hasCommonPid) {
+              if (!result.includes(group[i])) result.push(group[i]);
+              if (!result.includes(group[j])) result.push(group[j]);
+            }
+          }
+        }
+      });
+
+      if (result.length > 0) {
+        let properties = result.reduce((curr, acc) => {
+          console.log("current", curr);
+          console.log("acc", acc);
+          return [...curr, ...acc.properties];
+        }, []);
+
+        setBillPdfData({ ...result[0], properties });
+      } else {
+        let findData = billData.find((ele) => ele.transactionId === id);
+
+        setBillPdfData(findData);
+      }
+    } else {
+      let findData = billData.find((ele) => ele.transactionId === id);
+
+      setBillPdfData(findData);
+    }
   };
 
   useEffect(() => {
@@ -352,7 +473,14 @@ const SampleTransaction = () => {
     }
   };
 
-  const handleTextBoxOnFocus = (e, value, billId, propertyId, resultId) => {
+  const handleTextBoxOnFocus = (
+    e,
+    value,
+    billId,
+    propertyId,
+    resultId,
+    transactionProperyId
+  ) => {
     if (resultId) {
       setEditMode(true);
     } else {
@@ -362,6 +490,7 @@ const SampleTransaction = () => {
     setCurrent({
       billId: billId,
       propertyId: propertyId,
+      transactionProperyId: transactionProperyId,
     });
     setResult({
       ...result,
@@ -370,7 +499,7 @@ const SampleTransaction = () => {
     });
   };
 
-  const handleCancel = () => {
+  const handleCancelTwo = () => {
     setTransactionData({
       billNo: "",
       date: moment(new Date()).format("YYYY-MM-DD"),
@@ -378,6 +507,7 @@ const SampleTransaction = () => {
       locationId: "",
       partyId: "",
     });
+    handleCancel();
   };
 
   const handleRemark = (e, index) => {
@@ -396,6 +526,21 @@ const SampleTransaction = () => {
     });
   };
 
+  const handleNewEditPropertyRemark = (e, index) => {
+    let updatedNewProperty = editNewProperty.map((ele, eleIndex) => {
+      if (eleIndex === index) {
+        return {
+          ...ele,
+          remark: e.target.value,
+        };
+      } else {
+        return ele;
+      }
+    });
+
+    setEditNewProperty(updatedNewProperty);
+  };
+
   // const handlePaid = (e, index) => {
   //   setTransactionData({
   //     ...transactionData,
@@ -412,12 +557,71 @@ const SampleTransaction = () => {
   //   });
   // };
 
-  const handlePropertyDropChange = (e, index) => {
-    let p = propertyList.find((ele) => e.value === ele._id);
+  const handlePropertyDropChange = (e, index, ele) => {
+    if (e.value === "") {
+      if (ele.isDefault) {
+        let idObj = {
+          billNo: transactionData.billNo,
+          transactionId: transactionData.transactionId,
+          transactionPropertyId: ele.transactionProperyId,
+          pid: ele.pid.value,
+          resultId: ele.resultId,
+        };
 
-    setTransactionData({
-      ...transactionData,
-      properties: transactionData.properties.map((ele, eleIndex) => {
+        ipcRenderer.send("deleteDefautProperty:load", idObj);
+
+        ipcRenderer.on("deleteDefautProperty:success", (e, data) => {
+          let parsedData = JSON.parse(data);
+
+          if (parsedData.success) {
+            setTransactionData({
+              ...transactionData,
+              properties: transactionData.properties.filter(
+                (_, eleIndex) => eleIndex !== index
+              ),
+            });
+          }
+        });
+      } else {
+        setTransactionData({
+          ...transactionData,
+          properties: transactionData.properties.filter(
+            (_, eleIndex) => eleIndex !== index
+          ),
+        });
+      }
+    } else {
+      let p = propertyList.find((ele) => e.value === ele._id);
+
+      setTransactionData({
+        ...transactionData,
+        properties: transactionData.properties.map((ele, eleIndex) => {
+          if (eleIndex === index) {
+            return {
+              ...ele,
+              pid: e,
+              price: p.pprice,
+              unit: p.punit,
+            };
+          } else {
+            return ele;
+          }
+        }),
+      });
+    }
+  };
+
+  const handleNewEditPropertyDropChange = (e, index) => {
+    if (e.value === "") {
+      let updatedTransaction = editNewProperty.filter(
+        (ele, eleIndex) => eleIndex !== index
+      );
+
+      setEditNewProperty(updatedTransaction);
+    } else {
+      let p = propertyList.find((ele) => e.value === ele._id);
+
+      let updatedDropValue = editNewProperty.map((ele, eleIndex) => {
         if (eleIndex === index) {
           return {
             ...ele,
@@ -428,8 +632,10 @@ const SampleTransaction = () => {
         } else {
           return ele;
         }
-      }),
-    });
+      });
+
+      setEditNewProperty(updatedDropValue);
+    }
   };
 
   const handleNewPropertyChange = (e) => {
@@ -450,33 +656,49 @@ const SampleTransaction = () => {
   };
 
   const handleAddProperty = () => {
-    // setTransactionData({
-    //   ...transactionData,
-    //   properties: [
-    //     ...transactionData.properties,
-    //     { pid: "", price: "", unit: "", remark: "" },
-    //   ],
-    // });
+    if (!editBill.flag) {
+      let alreadyExists = transactionData.properties.find(
+        (ele) =>
+          ele.pid.value === newTransaction.pid.value &&
+          ele.price === newTransaction.price
+      );
 
-    setTransactionData({
-      ...transactionData,
-      properties: [...transactionData.properties, newTransaction],
-    });
+      if (alreadyExists) {
+        toast.warn("Property already exists.");
+      } else {
+        setTransactionData({
+          ...transactionData,
+          properties: [...transactionData.properties, newTransaction],
+        });
+        setNewTransaction({
+          pid: "",
+          price: "",
+          remark: "",
+        });
+      }
+    } else {
+      let mergedData = [...transactionData.properties, ...editNewProperty];
+
+      let alreadyExists = mergedData.find(
+        (ele) =>
+          ele.pid.value === newTransaction.pid.value &&
+          ele.price === newTransaction.price
+      );
+      if (alreadyExists) {
+        toast.warn("Property already exists.");
+      } else {
+        setEditNewProperty([...editNewProperty, newTransaction]);
+
+        setNewTransaction({
+          pid: "",
+          price: "",
+          remark: "",
+        });
+      }
+    }
 
     setTotalPrice(totalPrice + parseInt(newTransaction.price));
-
-    setNewTransaction({
-      pid: "",
-      price: "",
-      remark: "",
-    });
   };
-
-  useEffect(() => {
-    if (transactionData.partyId) {
-      getPartyAccount();
-    }
-  }, [transactionData.partyId]);
 
   const getPartyAccount = () => {
     let accountData = partyList.find(
@@ -505,6 +727,64 @@ const SampleTransaction = () => {
     }
   };
 
+  const handleEditNewProperty = (e, data, key) => {
+    let updatedProperty = editNewProperty.map((ele) => {
+      return {
+        ...ele,
+        paid: e.target.checked,
+      };
+    });
+
+    setEditNewProperty(updatedProperty);
+
+    setTransactionData({
+      ...transactionData,
+      properties: transactionData.properties.map((ele) => {
+        return {
+          ...ele,
+          paid: e.target.checked,
+        };
+      }),
+    });
+  };
+
+  const handleEditData = (e, id) => {
+    setEditBill({ flag: true, id: id });
+
+    let findData = billData.find((ele) => ele.transactionId === id);
+
+    let sampleData = getArrayValue(findData.sampleId, sampleList, "_id");
+    let locationData = getArrayValue(
+      findData.locationName,
+      location,
+      "location"
+    );
+    let companyData = getArrayValue(
+      findData.companyName,
+      partyList,
+      "companyName"
+    );
+
+    let updatedObj = {
+      ...findData,
+      sampleId: { value: sampleData?._id, label: sampleData?.sampleName },
+      locationId: { value: locationData?._id, label: locationData?.location },
+      partyId: { value: companyData?._id, label: companyData?.companyName },
+    };
+
+    setTransactionData(updatedObj);
+  };
+
+  const handleMultiplePrint = (e, data, index) => {
+    if (e.target.checked) {
+      setPrintDataCount([...printDataCount, index]);
+    } else {
+      setPrintDataCount(printDataCount.filter((ele) => ele !== index));
+    }
+  };
+
+  console.log(printDataCount);
+
   return (
     <div className="row">
       {Object.keys(billPdfData).length > 0 && (
@@ -513,202 +793,293 @@ const SampleTransaction = () => {
         </ComponentToPrint>
       )}
 
-      <div className="col-5">
-        <div className="">
-          <div className="row mb-2">
-            <div className="col-2">
-              <TextBox
-                name="billNo"
-                label="No"
-                onChange={handleTextChange}
-                value={transactionData.billNo}
-                formError={formError.billNo}
-              />
-            </div>
-            <div className="col-5">
-              <DateComponent
-                name="date"
-                label="Date"
-                value={transactionData.date}
-                onChange={handleTextChange}
-              />
-            </div>
-            <div className="col-5">
-              <SearchableDrop
-                label="Sample Name"
-                data={sampleList}
-                value={transactionData.sampleId}
-                handleChange={(e) => handleSearchDropChange(e, "sampleId")}
-                formError={formError.sampleId}
-              />
-            </div>
-          </div>
-          <div className="row mb-2">
-            <div className="col-2">
-              <SearchableDrop
-                label="Location"
-                data={location}
-                value={transactionData.locationId}
-                handleChange={(e) => handleSearchDropChange(e, "locationId")}
-                formError={formError.locationId}
-              />
-            </div>
-            <div className="col-10">
-              <SearchableDrop
-                label="Party Name"
-                data={partyList}
-                value={transactionData.partyId}
-                handleChange={(e) => handleSearchDropChange(e, "partyId")}
-                formError={formError.partyId}
-              />
-            </div>
-          </div>
-        </div>
-
-        {propertyList.length > 0 && (
-          <>
-            <hr />
-            <div className="transaction-add-table">
-              <div className="">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>A/C</th>
-                      <th>Test Name</th>
-                      <th>Remark</th>
-                      <th>Price</th>
-                      <th>Paid</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {transactionData?.properties?.map((ele, index) => {
-                      return (
-                        <tr key={index}>
-                          <td>
-                            <TextBox
-                              className="disabled"
-                              value={getPartyAccount()?.account}
-                            />
-                          </td>
-                          <td>
-                            <SearchableDrop
-                              data={propertyList}
-                              value={ele.pid}
-                              handleChange={(e) =>
-                                handlePropertyDropChange(e, index)
-                              }
-                            />
-                          </td>
-                          <td>
-                            <TextBox
-                              name="remark"
-                              value={ele.remark}
-                              onChange={(e) => handleRemark(e, index)}
-                            />
-                          </td>
-                          <td>
-                            <TextBox name="price" value={ele.price} />
-                          </td>
-                          <td>
-                            <input
-                              type="checkbox"
-                              checked={ele.paid}
-                              name="paid"
-                              onChange={(e) =>
-                                handlePaid(e, ele, "transaction")
-                              }
-                              className={
-                                getPartyAccount()?.account === "Y"
-                                  ? "disabled"
-                                  : ""
-                              }
-                            />
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    <tr>
-                      <td>
-                        <TextBox
-                          className="disabled"
-                          value={getPartyAccount()?.account}
-                        />
-                      </td>
-                      <td>
-                        <SearchableDrop
-                          data={propertyList}
-                          value={newTransaction.pid}
-                          handleChange={(e) => handleNewPropertyChange(e)}
-                        />
-                      </td>
-                      <td>
-                        <TextBox
-                          name="remark"
-                          value={newTransaction.remark}
-                          onChange={(e) => handleNewPropertyRemark(e)}
-                        />
-                      </td>
-                      <td>
-                        <TextBox name="price" value={newTransaction.price} />
-                      </td>
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={newTransaction.paid}
-                          name="paid"
-                          onChange={(e) => handlePaid(e, ele, "newTransaction")}
-                          className={
-                            getPartyAccount()?.account === "Y" ? "disabled" : ""
-                          }
-                        />
-                      </td>
-                      <td>
-                        <span onClick={handleAddProperty} className="plus-icon">
-                          <i className={ICONS.ADD_ICON} />
-                        </span>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+      <div className="d-flex">
+        <div className="col-5 sample-detail">
+          <div className="">
+            <div className="row mb-2 d-flex">
+              <div className="mr-5">
+                <TextBox
+                  name="billNo"
+                  label="No"
+                  onChange={handleTextChange}
+                  value={transactionData.billNo}
+                  formError={formError.billNo}
+                  width="30"
+                />
+              </div>
+              <div className="mr-5">
+                <DateComponent
+                  name="date"
+                  label="Date"
+                  value={transactionData.date}
+                  onChange={handleTextChange}
+                  width="130"
+                />
+              </div>
+              <div className="col-5">
+                <SearchableDrop
+                  label="Sample Name"
+                  data={sampleList}
+                  value={transactionData.sampleId}
+                  handleChange={(e) => handleSearchDropChange(e, "sampleId")}
+                  formError={formError.sampleId}
+                  width="300"
+                />
               </div>
             </div>
-          </>
-        )}
-
-        <div className="row">
-          <div className="col">Total : {totalPrice}</div>
-        </div>
-
-        <div className="row">
-          <div className="col">
-            <CustomButton label="Save" onClick={handleSaveBill} />
+            <div className="row mb-2 d-flex">
+              <div className="col-2 mr-5">
+                <SearchableDrop
+                  label="Location"
+                  data={location}
+                  value={transactionData.locationId}
+                  handleChange={(e) => handleSearchDropChange(e, "locationId")}
+                  formError={formError.locationId}
+                  width="100"
+                />
+              </div>
+              <div className="col-10">
+                <SearchableDrop
+                  label="Party Name"
+                  data={partyList}
+                  value={transactionData.partyId}
+                  handleChange={(e) => handleSearchDropChange(e, "partyId")}
+                  formError={formError.partyId}
+                  width="400"
+                />
+              </div>
+            </div>
           </div>
-          <div className="col">
-            <CustomButton
-              label="Cancel"
-              onClick={handleCancel}
-              className="btn-secondary"
-            />
+
+          {propertyList.length > 0 && (
+            <>
+              <hr />
+              <div className="transaction-add-table">
+                <div className="">
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>A/C</th>
+                        <th>Test Name</th>
+                        <th>Remark</th>
+                        <th>Price</th>
+                        <th>Paid</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {transactionData?.properties?.map((ele, index) => {
+                        return (
+                          <tr key={index}>
+                            <td>
+                              <TextBox
+                                className="disabled w-20"
+                                value={getPartyAccount()?.account}
+                              />
+                            </td>
+                            <td>
+                              <SearchableDrop
+                                data={propertyList}
+                                value={ele.pid}
+                                handleChange={(e) =>
+                                  handlePropertyDropChange(e, index, ele)
+                                }
+                                width="200"
+                              />
+                            </td>
+                            <td>
+                              <TextBox
+                                name="remark"
+                                value={ele.remark}
+                                onChange={(e) => handleRemark(e, index)}
+                                width="100"
+                              />
+                            </td>
+                            <td>
+                              <TextBox
+                                name="price"
+                                value={ele.price}
+                                width="100"
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="checkbox"
+                                checked={ele.paid}
+                                name="paid"
+                                onChange={(e) =>
+                                  handlePaid(e, ele, "transaction")
+                                }
+                                className={
+                                  getPartyAccount()?.account === "Y"
+                                    ? "disabled"
+                                    : ""
+                                }
+                              />
+                            </td>
+                          </tr>
+                        );
+                      })}
+
+                      {/* on edit new property save */}
+                      {editBill.flag &&
+                        editNewProperty.map((ele, index) => {
+                          return (
+                            <tr key={index}>
+                              <td>
+                                <TextBox
+                                  className="disabled w-20"
+                                  value={getPartyAccount()?.account}
+                                />
+                              </td>
+                              <td>
+                                <SearchableDrop
+                                  data={propertyList}
+                                  value={ele.pid}
+                                  handleChange={(e) =>
+                                    handleNewEditPropertyDropChange(e, index)
+                                  }
+                                  width="100"
+                                />
+                              </td>
+                              <td>
+                                <TextBox
+                                  name="remark"
+                                  value={ele.remark}
+                                  onChange={(e) =>
+                                    handleNewEditPropertyRemark(e, index)
+                                  }
+                                  width="100"
+                                />
+                              </td>
+                              <td>
+                                <TextBox
+                                  name="price"
+                                  value={ele.price}
+                                  width="100"
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  type="checkbox"
+                                  checked={ele.paid}
+                                  name="paid"
+                                  onChange={(e) =>
+                                    handleEditNewProperty(e, ele, "transaction")
+                                  }
+                                  className={
+                                    getPartyAccount()?.account === "Y"
+                                      ? "disabled"
+                                      : ""
+                                  }
+                                />
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      <tr>
+                        <td>
+                          <TextBox
+                            className="disabled w-20"
+                            value={getPartyAccount()?.account}
+                          />
+                        </td>
+                        <td>
+                          <SearchableDrop
+                            data={propertyList}
+                            value={newTransaction.pid}
+                            handleChange={(e) => handleNewPropertyChange(e)}
+                          />
+                        </td>
+                        <td>
+                          <TextBox
+                            name="remark"
+                            value={newTransaction.remark}
+                            onChange={(e) => handleNewPropertyRemark(e)}
+                            width="100"
+                          />
+                        </td>
+                        <td>
+                          <TextBox
+                            name="price"
+                            value={newTransaction.price}
+                            width="100"
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="checkbox"
+                            checked={newTransaction.paid}
+                            name="paid"
+                            onChange={(e) =>
+                              handlePaid(e, undefined, "newTransaction")
+                            }
+                            className={
+                              getPartyAccount()?.account === "Y"
+                                ? "disabled"
+                                : ""
+                            }
+                          />
+                        </td>
+                        <td>
+                          <span
+                            onClick={handleAddProperty}
+                            className="plus-icon"
+                          >
+                            <i className={ICONS.ADD_ICON} />
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="row">
+            <div className="col">Total : {totalPrice}</div>
+          </div>
+
+          <div className="d-flex justify-content-center mt-5">
+            <div className="col mr-5">
+              <CustomButton
+                label={editBill.flag ? "Update" : "Save"}
+                onClick={handleSaveBill}
+              />
+            </div>
+            <div className="col">
+              <CustomButton
+                label="Cancel"
+                onClick={handleCancelTwo}
+                className="btn-secondary"
+              />
+            </div>
           </div>
         </div>
-      </div>
-      <div className="col-7">
-        <TransactionBillTable
-          dateFilter={dateFilter}
-          handleDateChange={handleDateChange}
-          handleNextDate={handleNextDate}
-          handlePreviousDate={handlePreviousDate}
-          header={header}
-          billData={billData}
-          handlePrint={handlePrint}
-          handleId={handleId}
-          handleTestResult={handleTestResult}
-          handleSaveResult={handleSaveResult}
-          result={result}
-          handleTextBoxOnFocus={handleTextBoxOnFocus}
-          editMode={editMode}
-          current={current}
-        />
+        <div className="">
+          <TransactionBillTable
+            dateFilter={dateFilter}
+            handleDateChange={handleDateChange}
+            handleNextDate={handleNextDate}
+            handlePreviousDate={handlePreviousDate}
+            header={header}
+            billData={currentItems}
+            handlePrint={handlePrint}
+            handleId={handleId}
+            handleTestResult={handleTestResult}
+            handleSaveResult={handleSaveResult}
+            result={result}
+            handleTextBoxOnFocus={handleTextBoxOnFocus}
+            editMode={editMode}
+            current={current}
+            handleEditData={handleEditData}
+            editBill={editBill}
+            handlePageClick={handlePageClick}
+            pageCount={pageCount}
+            handleMultiplePrint={handleMultiplePrint}
+            printDataCount={printDataCount}
+          />
+        </div>
       </div>
 
       <div>

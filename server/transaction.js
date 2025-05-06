@@ -33,6 +33,91 @@ const addTransaction = async (con, mainWindow, data) => {
   }
 };
 
+const updateTransaction = async (con, mainWindow, data) => {
+  try {
+    let {
+      billNo,
+      createdAt,
+      sampleId,
+      partyId,
+      locationId,
+      propertyList,
+      transactionId,
+    } = data.updateSave;
+    let { newEdit } = data;
+
+    // main transaction update
+    let qry = `UPDATE sampleTransaction SET
+    sampleId=${sampleId},
+    partyId=${partyId},
+    locationId=${locationId},
+    paid=${propertyList[0].paid} WHERE [_id]=${transactionId}`;
+
+    let result = await con.query(qry);
+
+    for (const row of propertyList) {
+      try {
+        let samplePropertiesQuery = `UPDATE transactionProperties
+        SET price='${row.price}',
+        unit='${row.unit}',
+        remark='${row.remark}',
+        paid=${row.paid}
+        WHERE [billNo]=${billNo} AND [pid]=${row.pid} AND [_id]=${row.transactionProperyId}`;
+
+        let result2 = await con.query(samplePropertiesQuery);
+      } catch (e) {
+        console.log("e transaction properties error", e);
+      }
+    }
+
+    if (newEdit.length > 0) {
+      for (let row of newEdit) {
+        let qry2 = `insert into transactionProperties (billNo, createdAt, sampleId, pid, price, unit, remark, paid) values (${billNo}, #${createdAt}#, ${sampleId}, ${row.pid}, '${row.price}', '${row.unit}', '${row.remark}', ${row.paid})`;
+
+        let result3 = await con.query(qry2);
+        let propertyLastId = await con.query("SELECT @@IDENTITY AS lastId");
+        let transactionResultQry = `insert into sampleResults (billId, propertyId, createdAt, transactionPropertyId) values
+        ('${transactionId}', '${row.pid}', '${createdAt}', '${propertyLastId[0].lastId}')`;
+        let transactionResult = await con.query(transactionResultQry);
+      }
+    }
+
+    mainWindow.webContents.send(
+      "updateBill:success",
+      JSON.stringify({ success: true })
+    );
+  } catch (e) {
+    console.log("e sample transaction error", e);
+  }
+};
+
+const deleteDefaultProperty = async (con, mainWindow, data) => {
+  try {
+    console.log("data inside try", data);
+    const { billNo, transactionId, transactionPropertyId, pid, resultId } =
+      data;
+
+    let transactionProertyQuery = `DELETE FROM transactionProperties WHERE [_id]=${transactionPropertyId}`;
+
+    console.log("transactionProertyQuery", transactionProertyQuery);
+
+    let res = await con.query(transactionProertyQuery);
+
+    let propertyResultQuery = `DELETE FROM sampleResults WHERE [_id]=${resultId}`;
+
+    console.log("propertyResultQuery", propertyResultQuery);
+
+    let resultRes = await con.query(propertyResultQuery);
+
+    mainWindow.webContents.send(
+      "deleteDefautProperty:success",
+      JSON.stringify({ success: true })
+    );
+  } catch (e) {
+    console.log("e", e);
+  }
+};
+
 const listTransaction = async (con, mainWindow, data) => {
   try {
     // console.log("date", data);
@@ -66,7 +151,7 @@ const listTransaction = async (con, mainWindow, data) => {
             INNER JOIN [propertyMapping] pm ON tp.[pid] = pm.[pid] AND tp.[sampleId] = pm.[sid] AND tp.[price] = pm.[pprice])   
             INNER JOIN [sampleProperty] sp ON sp.[_id] = pm.[pid])     
     WHERE
-        t.[createdAt] = #${updatedData}#;`;
+        t.[createdAt] = #${updatedData}# ORDER BY tp.[_id] ASC;`;
 
     let testQry = await con.query(qry);
 
@@ -122,8 +207,6 @@ const listTransaction = async (con, mainWindow, data) => {
           transactionProperyId: resultData && resultData.transactionPropertyId,
           paid: item.paid === "0" ? false : true,
         });
-
-        console.log("acc", acc);
 
         return acc;
       }, {})
@@ -251,4 +334,10 @@ AND YEAR(createdAt) = YEAR(#${currentDate}#)`;
   }
 };
 
-module.exports = { addTransaction, listTransaction, getMonthBillCount };
+module.exports = {
+  addTransaction,
+  listTransaction,
+  getMonthBillCount,
+  updateTransaction,
+  deleteDefaultProperty,
+};

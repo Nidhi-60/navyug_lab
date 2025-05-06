@@ -39,6 +39,8 @@ const {
   addTransaction,
   listTransaction,
   getMonthBillCount,
+  updateTransaction,
+  deleteDefaultProperty,
 } = require("./server/transaction");
 const { billShow, customReport } = require("./server/reports");
 const { addResult, updateResult } = require("./server/sampleResults");
@@ -127,7 +129,11 @@ function createMainWindow() {
     }
   });
 
-  mainWindow.on("closed", () => (mainWindow = null));
+  mainWindow.on("close", (e) => {
+    mainWindow.webContents.send("logout");
+  });
+
+  // mainWindow.on("closed", () => (mainWindow = null));
 }
 
 const defaultMenu = [];
@@ -370,6 +376,14 @@ ipcMain.on("addBill:load", async (e, data) =>
   addTransaction(con, mainWindow, data)
 );
 
+ipcMain.on("updateBill:load", async (e, data) =>
+  updateTransaction(con, mainWindow, data)
+);
+
+ipcMain.on("deleteDefautProperty:load", async (e, data) =>
+  deleteDefaultProperty(con, mainWindow, data)
+);
+
 ipcMain.on("transactionList:load", (e, data) =>
   listTransaction(con, mainWindow, data)
 );
@@ -384,7 +398,9 @@ ipcMain.on("updateResult:load", (e, data) =>
   updateResult(con, mainWindow, data)
 );
 
-ipcMain.on("billCount:load", (e, data) => getMonthBillCount(con, mainWindow, data));
+ipcMain.on("billCount:load", (e, data) =>
+  getMonthBillCount(con, mainWindow, data)
+);
 
 ipcMain.on("loadReport:load", (e, data) => customReport(con, mainWindow, data));
 

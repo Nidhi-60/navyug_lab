@@ -9,7 +9,7 @@ const DatePagination = (props) => {
 
   return (
     <>
-      <div className="d-flex align-items-center justify-content-evenly">
+      <div className="d-flex justify-content-center align-items-center">
         <div onClick={handlePreviousDate} className="pagination-icon me-2">
           <span>
             <i className={ICONS.LEFT_ICON} />
@@ -19,6 +19,7 @@ const DatePagination = (props) => {
           <DateComponent
             value={moment(currentFilter).format("YYYY-MM-DD")}
             onChange={handleChange}
+            width="200"
           />
         </div>
         <div onClick={handleNextDate} className="pagination-icon ms-2">

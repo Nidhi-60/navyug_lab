@@ -10,8 +10,12 @@ import CustomModel from "../common/CustomModel";
 import CustomButton from "../common/Button";
 import SearchableDrop from "../common/SearchableDrop";
 import partyDetailValidation from "../validation/partyDetail";
+import { strUpperCase } from "../utils/strUpperCase";
+import ReactPaginate from "react-paginate";
+import usePagination from "../hooks/usePagination";
 
-const PartyMaster = () => {
+const PartyMaster = (props) => {
+  const { handleCancel } = props;
   const [partyDetail, setPartyDetail] = useState({
     companyName: "",
     address: "",
@@ -33,6 +37,10 @@ const PartyMaster = () => {
   const [modelShow, setModelShow] = useState(false);
   const [deleteId, setDeleteId] = useState("");
   const [formError, setFormError] = useState({});
+  const [handlePageClick, currentItems, pageCount] = usePagination(
+    10,
+    partyList
+  );
 
   useEffect(() => {
     ipcRenderer.send("partyDetail:load", search, searchText);
@@ -74,9 +82,19 @@ const PartyMaster = () => {
   const handleOnSave = () => {
     const { formError, formValid } = partyDetailValidation(partyDetail);
 
+    let formatePartyDetail = {
+      ...partyDetail,
+      companyName: strUpperCase(partyDetail.companyName),
+      companyCity: strUpperCase(partyDetail.companyCity),
+      address: strUpperCase(partyDetail.address),
+      contactPersonName: strUpperCase(partyDetail.contactPersonName),
+      officeContactPerson: strUpperCase(partyDetail.officeContactPerson),
+      officeAddress: strUpperCase(partyDetail.officeAddress),
+    };
+
     if (formValid) {
       if (editMode) {
-        ipcRenderer.send("updatePartyDetail:load", partyDetail);
+        ipcRenderer.send("updatePartyDetail:load", formatePartyDetail);
 
         ipcRenderer.on("updatePartyDetail:success", (e, data) => {
           refetchData();
@@ -98,25 +116,30 @@ const PartyMaster = () => {
           });
         });
       } else {
-        ipcRenderer.send("addPartyDetail:load", partyDetail);
+        ipcRenderer.send("addPartyDetail:load", formatePartyDetail);
 
         ipcRenderer.on("addPartyDetail:success", (e, data) => {
-          toast.success("Detail added Successfully.");
-          refetchData();
-          setPartyDetail({
-            companyName: "",
-            address: "",
-            companyCity: "",
-            contactNo: "",
-            contactPersonName: "",
-            contactPersonMobileNo: "",
-            officeContactPerson: "",
-            officeAddress: "",
-            officeContactNo: "",
-            account: "",
-            stNo: "",
-            tdsNo: "",
-          });
+          let parsedData = JSON.parse(data);
+          if (parsedData.success) {
+            toast.success("Detail added Successfully.");
+            refetchData();
+            setPartyDetail({
+              companyName: "",
+              address: "",
+              companyCity: "",
+              contactNo: "",
+              contactPersonName: "",
+              contactPersonMobileNo: "",
+              officeContactPerson: "",
+              officeAddress: "",
+              officeContactNo: "",
+              account: "",
+              stNo: "",
+              tdsNo: "",
+            });
+          } else {
+            toast.warn(parsedData.msg);
+          }
         });
       }
     } else {
@@ -167,6 +190,7 @@ const PartyMaster = () => {
       stNo: "",
       tdsNo: "",
     });
+    handleCancel();
   };
 
   const handleEdit = (e, id) => {
@@ -222,10 +246,10 @@ const PartyMaster = () => {
         handleClose={handleModel}
         button={modelButtons}
       />
-      <div className="row m-1">
+      <div className="row m-1 d-flex">
         <div className="col-6 detail-box">
           <div className="mb-2">
-            <p className="detail-header">General Details</p>
+            <p className="text-header">General Details</p>
           </div>
           <div className="mb-2 row">
             <div className="col-3">
@@ -237,6 +261,7 @@ const PartyMaster = () => {
                 value={partyDetail.companyName}
                 onChange={handleTextChange}
                 formError={formError.companyName}
+                width="500"
               />
             </div>
           </div>
@@ -249,6 +274,7 @@ const PartyMaster = () => {
                 name="address"
                 value={partyDetail.address}
                 onChange={handleTextChange}
+                width="500"
               />
             </div>
           </div>
@@ -261,6 +287,7 @@ const PartyMaster = () => {
                 name="companyCity"
                 value={partyDetail.companyCity}
                 onChange={handleTextChange}
+                width="500"
               />
             </div>
           </div>
@@ -273,6 +300,7 @@ const PartyMaster = () => {
                 name="contactNo"
                 value={partyDetail.contactNo}
                 onChange={handleTextChange}
+                width="500"
               />
             </div>
           </div>
@@ -285,6 +313,7 @@ const PartyMaster = () => {
                 name="contactPersonName"
                 value={partyDetail.contactPersonName}
                 onChange={handleTextChange}
+                width="500"
               />
             </div>
           </div>
@@ -297,13 +326,14 @@ const PartyMaster = () => {
                 name="contactPersonMobileNo"
                 value={partyDetail.contactPersonMobileNo}
                 onChange={handleTextChange}
+                width="500"
               />
             </div>
           </div>
         </div>
         <div className="col-6 detail-box">
           <div>
-            <p className="detail-header">Official Details</p>
+            <p className="text-header">Official Details</p>
           </div>
           <div className="mb-2 row">
             <div className="col-3">
@@ -314,6 +344,7 @@ const PartyMaster = () => {
                 name="officeContactPerson"
                 value={partyDetail.officeContactPerson}
                 onChange={handleTextChange}
+                width="500"
               />
             </div>
           </div>
@@ -326,6 +357,7 @@ const PartyMaster = () => {
                 name="officeAddress"
                 value={partyDetail.officeAddress}
                 onChange={handleTextChange}
+                width="500"
               />
             </div>
           </div>
@@ -338,6 +370,7 @@ const PartyMaster = () => {
                 name="officeContactNo"
                 value={partyDetail.officeContactNo}
                 onChange={handleTextChange}
+                width="500"
               />
             </div>
           </div>
@@ -352,6 +385,7 @@ const PartyMaster = () => {
                 name="account"
                 value={partyDetail.account}
                 formError={formError.account}
+                width="500"
               />
             </div>
           </div>
@@ -364,6 +398,7 @@ const PartyMaster = () => {
                 name="stNo"
                 value={partyDetail.stNo}
                 onChange={handleTextChange}
+                width="500"
               />
             </div>
           </div>
@@ -376,13 +411,14 @@ const PartyMaster = () => {
                 name="tdsNo"
                 value={partyDetail.tdsNo}
                 onChange={handleTextChange}
+                width="500"
               />
             </div>
           </div>
         </div>
       </div>
-      <div className="d-flex justify-content-center mb-3">
-        <div className="me-2">
+      <div className="d-flex justify-content-center mb-5">
+        <div className="me-2 mr-5">
           <CustomButton
             label={editMode ? "Update" : "Save"}
             onClick={handleOnSave}
@@ -398,7 +434,7 @@ const PartyMaster = () => {
         </div>
       </div>
 
-      <div className="row mb-3">
+      <div className="d-flex">
         <div className="col">
           <TextBox
             name="search"
@@ -406,7 +442,7 @@ const PartyMaster = () => {
             value={searchText}
           />
         </div>
-        <div className="col">
+        <div className="ml-5">
           <CustomButton
             label="Search"
             onClick={handleSearch}
@@ -415,12 +451,33 @@ const PartyMaster = () => {
         </div>
       </div>
 
-      <div className="row m-1">
+      <div className="row mt-5">
         <PartyDetailTable
           columns={columns}
-          data={partyList}
+          data={currentItems}
           handleEdit={handleEdit}
           handleDelete={handleDelete}
+        />
+      </div>
+      <div>
+        <ReactPaginate
+          breakLabel="..."
+          nextLabel=">"
+          onPageChange={handlePageClick}
+          pageRangeDisplayed={5}
+          pageCount={pageCount}
+          previousLabel="<"
+          renderOnZeroPageCount={null}
+          containerClassName="pagination"
+          pageClassName="page-item"
+          pageLinkClassName="page-link"
+          previousClassName="page-item"
+          previousLinkClassName="page-link"
+          nextClassName="page-item"
+          nextLinkClassName="page-link"
+          breakClassName="page-item"
+          breakLinkClassName="page-link"
+          activeClassName="active"
         />
       </div>
     </>

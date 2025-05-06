@@ -12,7 +12,7 @@ const list = async (con, searchText, search, mainWindow) => {
                     tdsNo like '%${searchText}%'
                     `;
     } else {
-      qry = "select * from partyDetail";
+      qry = "select * from partyDetail ORDER BY companyName ASC";
     }
 
     const data = await con.query(qry);
@@ -42,29 +42,40 @@ const create = async (con, data, mainWindow) => {
       tdsNo,
     } = data;
 
-    let qry = `insert into partyDetail 
-           (companyName, address, companyCity, contactNo, 
-           contactPersonName, contactPersonMobileNo, officeContactPerson, 
-            officeAddress, officeContactNo, account, stNo, tdsNo)
-            values('${companyName.replace(/'/g, "''")}',
-                  '${address.replace(/'/g, "''")}',
-                  '${companyCity.replace(/'/g, "''")}',
-                  '${contactNo.replace(/'/g, "''")}',
-                  '${contactPersonName.replace(/'/g, "''")}',
-                  '${contactPersonMobileNo.replace(/'/g, "''")}',
-                  '${officeContactPerson.replace(/'/g, "''")}',
-                  '${officeAddress.replace(/'/g, "''")}',
-                  '${officeContactNo.replace(/'/g, "''")}',
-                  '${account.value.replace(/'/g, "''")}',
-                  '${stNo.replace(/'/g, "''")}',
-                  '${tdsNo.replace(/'/g, "''")}')`;
+    let findUserQry = `SELECT companyName FROM partyDetail WHERE [companyName]='${companyName}'`;
 
-    const result = await con.query(qry);
+    let userRes = await con.query(findUserQry);
 
-    mainWindow.webContents.send(
-      "addPartyDetail:success",
-      JSON.stringify(result)
-    );
+    let userResponseParsed = JSON.parse(JSON.stringify(userRes));
+
+    if (userResponseParsed.length > 0) {
+      mainWindow.webContents.send(
+        "addPartyDetail:success",
+        JSON.stringify({ success: false, msg: "Name Already Exists" })
+      );
+    } else {
+      let qry = `insert into partyDetail
+             (companyName, address, companyCity, contactNo,
+             contactPersonName, contactPersonMobileNo, officeContactPerson,
+              officeAddress, officeContactNo, account, stNo, tdsNo)
+              values('${companyName.replace(/'/g, "''")}',
+                    '${address.replace(/'/g, "''")}',
+                    '${companyCity.replace(/'/g, "''")}',
+                    '${contactNo.replace(/'/g, "''")}',
+                    '${contactPersonName.replace(/'/g, "''")}',
+                    '${contactPersonMobileNo.replace(/'/g, "''")}',
+                    '${officeContactPerson.replace(/'/g, "''")}',
+                    '${officeAddress.replace(/'/g, "''")}',
+                    '${officeContactNo.replace(/'/g, "''")}',
+                    '${account.value.replace(/'/g, "''")}',
+                    '${stNo.replace(/'/g, "''")}',
+                    '${tdsNo.replace(/'/g, "''")}')`;
+      const result = await con.query(qry);
+      mainWindow.webContents.send(
+        "addPartyDetail:success",
+        JSON.stringify({ success: true })
+      );
+    }
   } catch (e) {
     console.log(e);
   }
@@ -142,7 +153,7 @@ const deleteRecord = async (con, data, mainWindow) => {
 
 const searchParty = async (con, mainWindow) => {
   try {
-    let qry = `select [companyName],[_id],[account] from partyDetail`;
+    let qry = `select [companyName],[_id],[account] from partyDetail ORDER BY companyName ASC`;
 
     let result = await con.query(qry);
 

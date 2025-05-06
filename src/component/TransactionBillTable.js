@@ -3,6 +3,8 @@ import CustomButton from "../common/Button";
 import moment from "moment";
 import DatePagination from "./DatePagination";
 import TextBox from "../common/TextBox";
+import { ICONS } from "../constant/icons";
+import ReactPaginate from "react-paginate";
 
 const TransactionBillTable = (props) => {
   const {
@@ -20,9 +22,13 @@ const TransactionBillTable = (props) => {
     handleTextBoxOnFocus,
     editMode,
     current,
+    handleEditData,
+    editBill,
+    handlePageClick,
+    pageCount,
+    handleMultiplePrint,
+    printDataCount,
   } = props;
-
-  // console.log("billData", billData);
 
   return (
     <div className="row">
@@ -34,10 +40,11 @@ const TransactionBillTable = (props) => {
           handlePreviousDate={handlePreviousDate}
         />
       </div>
-      <div className="row">
-        <table className="table">
+      <div className="row transaction-table">
+        <table className="table" border={1} width={"100%"}>
           <thead>
             <tr>
+              <th>Action</th>
               <th>Print</th>
               <th>SampleName</th>
               <th>CompanyName</th>
@@ -49,6 +56,7 @@ const TransactionBillTable = (props) => {
               <th>Remark</th>
               <th>Paid</th>
               <th>Test Date</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -57,6 +65,13 @@ const TransactionBillTable = (props) => {
                 <tr key={`${index}-${propertyIndex}`}>
                   {propertyIndex === 0 && (
                     <>
+                      <td rowSpan={ele.properties.length}>
+                        <span
+                          onClick={(e) => handleEditData(e, ele.transactionId)}
+                        >
+                          <i className={ICONS.EDIT_ICON} />
+                        </span>
+                      </td>
                       <td rowSpan={ele.properties.length}>
                         <CustomButton
                           label="Print"
@@ -77,6 +92,7 @@ const TransactionBillTable = (props) => {
                   <td>{property.propertyName}</td>
                   <td>
                     <TextBox
+                      key={propertyIndex}
                       onChange={(e) =>
                         handleTestResult(
                           e,
@@ -92,7 +108,8 @@ const TransactionBillTable = (props) => {
                           property.result,
                           ele.transactionId,
                           property.pid,
-                          property.resultId
+                          property.resultId,
+                          property.transactionProperyId
                         )
                       }
                       value={
@@ -104,6 +121,7 @@ const TransactionBillTable = (props) => {
                           ? result.result
                           : property.result
                       }
+                      width="100"
                     />
                   </td>
                   <td>{property.price}</td>
@@ -114,6 +132,13 @@ const TransactionBillTable = (props) => {
                       <td rowSpan={ele.properties.length}>
                         {moment(ele.createdAt).format("DD-MM-YY")}
                       </td>
+                      <td rowSpan={ele.properties.length}>
+                        <input
+                          type="checkbox"
+                          onChange={(e) => handleMultiplePrint(e, ele, index)}
+                          value={printDataCount.includes(index)}
+                        />
+                      </td>
                     </>
                   )}
                 </tr>
@@ -121,6 +146,29 @@ const TransactionBillTable = (props) => {
             })}
           </tbody>
         </table>
+      </div>
+      <div>
+        <div>
+          <ReactPaginate
+            breakLabel="..."
+            nextLabel=">"
+            onPageChange={handlePageClick}
+            pageRangeDisplayed={5}
+            pageCount={pageCount}
+            previousLabel="<"
+            renderOnZeroPageCount={null}
+            containerClassName="pagination"
+            pageClassName="page-item"
+            pageLinkClassName="page-link"
+            previousClassName="page-item"
+            previousLinkClassName="page-link"
+            nextClassName="page-item"
+            nextLinkClassName="page-link"
+            breakClassName="page-item"
+            breakLinkClassName="page-link"
+            activeClassName="active"
+          />
+        </div>
       </div>
     </div>
   );

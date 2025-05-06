@@ -6,7 +6,7 @@ const PartyDetailTable = (props) => {
   const { columns, data, handleEdit, handleDelete } = props;
 
   return (
-    <table className="table">
+    <table className="table" border={1} width={"100%"}>
       <thead>
         <tr>
           {columns.map((ele, index) => {
@@ -33,7 +33,7 @@ const PartyDetailTable = (props) => {
               <td>
                 <span
                   onClick={(e) => handleEdit(e, ele._id)}
-                  className="cursor-pointer me-2"
+                  className="cursor-pointer mr-5"
                 >
                   <i className={ICONS.EDIT_ICON} />
                 </span>

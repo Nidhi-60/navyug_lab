@@ -1,6 +1,7 @@
 // import "bootstrap/dist/css/bootstrap.min.css";
 import "react-toastify/dist/ReactToastify.css";
-import "./assests/css/index.css";
+// import "./assests/css/index.css";
+import "./assests/css/app.css";
 import "./assests/fonts/recog-icon/style.css";
 import { ipcRenderer } from "electron";
 import React, { useEffect, useState } from "react";
@@ -15,6 +16,7 @@ import signinValidator from "./validation/signin";
 import AddressPrint from "./container/AddressPrint";
 import Samples from "./container/Samples";
 import Properties from "./container/Properties";
+import Home from "./container/Home";
 
 const App = () => {
   const [currentPage, setCurrentPage] = useState("signIn");
@@ -41,8 +43,8 @@ const App = () => {
 
   useEffect(() => {
     if (isAuth) {
-      // setCurrentPage("sampleTransaction");
       setCurrentPage("sampleTransaction");
+      // setCurrentPage("partyMaster");
     }
   }, [isAuth]);
 
@@ -67,15 +69,22 @@ const App = () => {
         let result = JSON.parse(data);
 
         if (result.success) {
-          console.log(result);
           let userData = result.result[0];
           localStorage.setItem("user", JSON.stringify(userData));
-          setCurrentPage("sampleTransaction");
+          setCurrentPage("home");
         }
       });
     } else {
       setFormError(formErrors);
     }
+  };
+
+  const handleSignupCancel = () => {
+    setSigninDetail({ userName: "", password: "" });
+  };
+
+  const handleCancel = () => {
+    setCurrentPage("home");
   };
 
   switch (currentPage) {
@@ -86,23 +95,27 @@ const App = () => {
           handleTextChange={handleTextChange}
           handleSignin={handleSignin}
           formError={formError}
+          handleSignupCancel={handleSignupCancel}
         />
       );
       break;
+    case "home":
+      displayBlock = <Home />;
+      break;
     case "partyMaster":
-      displayBlock = <PartyMaster />;
+      displayBlock = <PartyMaster handleCancel={handleCancel} />;
       break;
     case "samples":
-      displayBlock = <Samples />;
+      displayBlock = <Samples handleCancel={handleCancel} />;
       break;
     case "properties":
-      displayBlock = <Properties />;
+      displayBlock = <Properties handleCancel={handleCancel} />;
       break;
     case "sampleMaster":
-      displayBlock = <SampleMaster />;
+      displayBlock = <SampleMaster handleCancel={handleCancel} />;
       break;
     case "sampleTransaction":
-      displayBlock = <SampleTransaction />;
+      displayBlock = <SampleTransaction handleCancel={handleCancel} />;
       break;
     case "customReport":
       displayBlock = <CustomReport />;

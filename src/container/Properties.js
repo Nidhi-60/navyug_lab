@@ -4,8 +4,12 @@ import TextBox from "../common/TextBox";
 import { ipcRenderer } from "electron";
 import { toast } from "react-toastify";
 import { ICONS } from "../constant/icons";
+import { strUpperCase } from "../utils/strUpperCase";
+import usePagination from "../hooks/usePagination";
+import ReactPaginate from "react-paginate";
 
-const Properties = () => {
+const Properties = (props) => {
+  const { handleCancel } = props;
   const [propertyDetail, setPropertyDetail] = useState({
     propertyName: "",
     description: "",
@@ -15,36 +19,63 @@ const Properties = () => {
     flag: false,
     id: undefined,
   });
+  const [handlePageClick, currentItems, pageCount] = usePagination(
+    10,
+    propertyList
+  );
 
   const handlePropertyChange = (e) => {
     setPropertyDetail({ ...propertyDetail, [e.target.name]: e.target.value });
   };
 
   const handleAddProperty = () => {
+    let formatedData = {
+      ...propertyDetail,
+      propertyName: strUpperCase(propertyDetail.propertyName),
+      description: strUpperCase(propertyDetail.description),
+    };
+
     if (!isedit.flag) {
-      ipcRenderer.send("addProperty:load", propertyDetail);
+      ipcRenderer.send("addProperty:load", formatedData);
 
       ipcRenderer.on("addProperty:success", (e, data) => {
-        toast.success("Property Added Successfully.");
+        let parsedData = JSON.parse(data);
+
+        if (parsedData.success) {
+          toast.success("Property Added Successfully.");
+        } else {
+          toast.warn(parsedData.msg);
+        }
+
+        setPropertyDetail({
+          propertyName: "",
+          description: "",
+        });
+        refetchProperty();
+
+        setIsEdit({
+          flag: false,
+          id: undefined,
+        });
       });
     } else {
-      ipcRenderer.send("updateProperty:load", propertyDetail);
+      ipcRenderer.send("updateProperty:load", formatedData);
 
       ipcRenderer.on("updateProperty:success", (e, data) => {
         toast.success("Property Updated Successfully.");
       });
+
+      setPropertyDetail({
+        propertyName: "",
+        description: "",
+      });
+      refetchProperty();
+
+      setIsEdit({
+        flag: false,
+        id: undefined,
+      });
     }
-
-    setPropertyDetail({
-      propertyName: "",
-      description: "",
-    });
-    refetchProperty();
-
-    setIsEdit({
-      flag: false,
-      id: undefined,
-    });
   };
 
   useEffect(() => {
@@ -59,8 +90,9 @@ const Properties = () => {
     });
   };
 
-  const handleCancel = () => {
+  const handleCancelTwo = () => {
     setPropertyDetail({ description: "", propertyName: "" });
+    handleCancel();
   };
 
   const handleEdit = (id) => {
@@ -85,9 +117,9 @@ const Properties = () => {
     <>
       <div className="row">
         <div className="col-12">
-          <p className="detail-header">Add Properties here</p>
-          <div className="row mb-2">
-            <div className="col-6">
+          <p className="text-header">Add Properties here</p>
+          <div className="d-flex justify-content-center">
+            <div className="col-6 mr-5">
               <TextBox
                 label="Property Name"
                 name="propertyName"
@@ -105,21 +137,21 @@ const Properties = () => {
             </div>
           </div>
           <div className="d-flex justify-content-center">
-            <div className="me-2">
+            <div className="mr-5">
               <CustomButton label="Save" onClick={handleAddProperty} />
             </div>
             <div>
               <CustomButton
                 label="Cancel"
                 className="btn-secondary"
-                onClick={handleCancel}
+                onClick={handleCancelTwo}
               />
             </div>
           </div>
         </div>
 
-        <div className="col-12 mt-2">
-          <table className="table">
+        <div className="col-12 mt-5">
+          <table className="table" border={1} width={"100%"}>
             <thead>
               <tr>
                 <th>Property Name</th>
@@ -128,14 +160,14 @@ const Properties = () => {
               </tr>
             </thead>
             <tbody>
-              {propertyList.map((ele, index) => {
+              {currentItems.map((ele, index) => {
                 return (
                   <tr key={index}>
                     <td>{ele.propertyName}</td>
                     <td>{ele.description}</td>
                     <td>
                       <span
-                        className="me-2"
+                        className="mr-5"
                         onClick={() => handleEdit(ele._id)}
                       >
                         <i className={ICONS.EDIT_ICON} />
@@ -149,6 +181,27 @@ const Properties = () => {
               })}
             </tbody>
           </table>
+        </div>
+        <div>
+          <ReactPaginate
+            breakLabel="..."
+            nextLabel=">"
+            onPageChange={handlePageClick}
+            pageRangeDisplayed={5}
+            pageCount={pageCount}
+            previousLabel="<"
+            renderOnZeroPageCount={null}
+            containerClassName="pagination"
+            pageClassName="page-item"
+            pageLinkClassName="page-link"
+            previousClassName="page-item"
+            previousLinkClassName="page-link"
+            nextClassName="page-item"
+            nextLinkClassName="page-link"
+            breakClassName="page-item"
+            breakLinkClassName="page-link"
+            activeClassName="active"
+          />
         </div>
       </div>
     </>

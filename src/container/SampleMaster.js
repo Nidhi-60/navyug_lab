@@ -7,7 +7,8 @@ import { ipcRenderer } from "electron";
 import { toast } from "react-toastify";
 import { ICONS } from "../constant/icons";
 
-const SampleMaster = () => {
+const SampleMaster = (props) => {
+  const { handleCancel } = props;
   const [unitOptions, setUnitOptions] = useState([]);
   const [sampleOptions, setSampleOptions] = useState([]);
   const [propertyList, setPropertyList] = useState([]);
@@ -22,6 +23,9 @@ const SampleMaster = () => {
   });
 
   const [currentSample, setCurrentSample] = useState("");
+
+  console.log("property list", propertyList);
+  console.log("new Property", newProperty);
 
   useEffect(() => {
     ipcRenderer.send("unit:load");
@@ -88,17 +92,29 @@ const SampleMaster = () => {
   };
 
   const handleAddNewProp = () => {
-    setNewProperty([
-      ...newProperty,
-      { ...newEditProperty, sid: currentSample.value },
-    ]);
-    setNewEditPoperty({
-      sid: "",
-      pid: "",
-      pprice: "",
-      punit: "",
-      isDefault: false,
+    let findProperty = propertyList.find((ele) => {
+      return (
+        ele.propertyId === newEditProperty.pid.value &&
+        ele.pprice === newEditProperty.pprice &&
+        ele.punit === newEditProperty.punit.value
+      );
     });
+
+    if (findProperty) {
+      toast.warn("Same Property with unit and price exists");
+    } else {
+      setNewProperty([
+        ...newProperty,
+        { ...newEditProperty, sid: currentSample.value },
+      ]);
+      setNewEditPoperty({
+        sid: "",
+        pid: "",
+        pprice: "",
+        punit: "",
+        isDefault: false,
+      });
+    }
   };
 
   const propertyHeader = [
@@ -154,65 +170,34 @@ const SampleMaster = () => {
   return (
     <>
       <div>
-        <p className="detail-header">Mapping Property</p>
-        <div className="row">
-          <div className="col-4">
+        <p className="text-header">Mapping Property</p>
+        <div className="d-flex">
+          <div className="mapping-box">
             <SearchableDrop
               data={sampleOptions}
               label="Select Sample"
               handleChange={handleSamplePropertyChange}
               value={currentSample}
+              width="300"
             />
           </div>
-          <div className="col-8">
-            <table className="table mapping-table">
-              <tbody>
-                {newProperty.map((ele, index) => {
-                  return (
-                    <tr key={index}>
-                      <td>
-                        <TextBox value={ele.pid.label} />
-                      </td>
-                      <td>
-                        <input type="checkbox" checked={ele.isDefault} />
-                      </td>
-                      <td>
-                        <TextBox value={ele.punit.label} />
-                      </td>
-                      <td>
-                        <TextBox value={ele.pprice} />
-                      </td>
-
-                      <td>
-                        <span
-                          onClick={(e) => handleDeleteProperty(e, index)}
-                          className="cancel-position"
-                        >
-                          <i className={ICONS.CANCEL_ICON} />
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-
+          <div className="">
             <table className="table mapping-table">
               <tbody>
                 {propertyList.map((ele, index) => {
                   return (
                     <tr key={index}>
                       <td>
-                        <TextBox value={ele.propertyName} />
+                        <TextBox value={ele.propertyName} width="300" />
                       </td>
                       <td>
                         <input type="checkbox" checked={ele.isDefault} />
                       </td>
                       <td>
-                        <TextBox value={ele.punit} />
+                        <TextBox value={ele.punit} width="100" />
                       </td>
                       <td>
-                        <TextBox value={ele.pprice} />
+                        <TextBox value={ele.pprice} width="100" />
                       </td>
                       <td>
                         <span
@@ -230,6 +215,37 @@ const SampleMaster = () => {
               </tbody>
             </table>
             <table className="table mapping-table">
+              <tbody>
+                {newProperty.map((ele, index) => {
+                  return (
+                    <tr key={index}>
+                      <td>
+                        <TextBox value={ele.pid.label} width="300" />
+                      </td>
+                      <td>
+                        <input type="checkbox" checked={ele.isDefault} />
+                      </td>
+                      <td>
+                        <TextBox value={ele.punit.label} width="100" />
+                      </td>
+                      <td>
+                        <TextBox value={ele.pprice} width="100" />
+                      </td>
+
+                      <td>
+                        <span
+                          onClick={(e) => handleDeleteProperty(e, index)}
+                          className="cursor-pointer"
+                        >
+                          <i className={ICONS.CANCEL_ICON} />
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <table className="table">
               <thead>
                 <tr>
                   {propertyHeader.map((ele) => {
@@ -245,6 +261,7 @@ const SampleMaster = () => {
                       value={newEditProperty.pid}
                       name="pid"
                       handleChange={(e) => handleNewPropChange(e, "pid")}
+                      width="300"
                     />
                   </td>
                   <td>
@@ -262,6 +279,7 @@ const SampleMaster = () => {
                       value={newEditProperty.punit}
                       name="punit"
                       handleChange={(e) => handleNewPropChange(e, "punit")}
+                      width="300"
                     />
                   </td>
                   <td>
@@ -269,6 +287,7 @@ const SampleMaster = () => {
                       name="pprice"
                       value={newEditProperty.pprice}
                       onChange={handleNewPropTextChange}
+                      width="100"
                     />
                   </td>
                   <td>
@@ -282,9 +301,19 @@ const SampleMaster = () => {
           </div>
         </div>
 
-        <div className="row mt-2">
-          <div className="text-center  cursor-pointer">
-            <CustomButton label="Save Mapping" onClick={handleSaveMapping} />
+        <div className="mt-5">
+          <div className="d-flex justify-content-center">
+            <CustomButton
+              label="Save Mapping"
+              onClick={handleSaveMapping}
+              className="mr-5"
+            />
+
+            <CustomButton
+              label="Cancel"
+              onClick={handleCancel}
+              className="btn-secondary"
+            />
           </div>
         </div>
       </div>

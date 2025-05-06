@@ -4,13 +4,22 @@ import { ipcRenderer } from "electron";
 import CustomButton from "../common/Button";
 import { toast } from "react-toastify";
 import { ICONS } from "../constant/icons";
+import { strUpperCase } from "../utils/strUpperCase";
 
-const Samples = () => {
+import usePagination from "../hooks/usePagination";
+import ReactPaginate from "react-paginate";
+
+const Samples = (props) => {
+  const { handleCancel } = props;
   const [sampleDetail, setSampleDetail] = useState({
     sampleName: "",
     description: "",
   });
   const [sampleList, setSampleList] = useState([]);
+  const [handlePageClick, currentItems, pageCount] = usePagination(
+    10,
+    sampleList
+  );
   const [isedit, setIsEdit] = useState({
     flag: false,
     id: undefined,
@@ -21,30 +30,53 @@ const Samples = () => {
   };
 
   const handleAddSample = () => {
+    let formatedData = {
+      ...sampleDetail,
+      sampleName: strUpperCase(sampleDetail.sampleName),
+      description: strUpperCase(sampleDetail.description),
+    };
+
     if (!isedit.flag) {
-      ipcRenderer.send("addSample:load", sampleDetail);
+      ipcRenderer.send("addSample:load", formatedData);
 
       ipcRenderer.on("addSample:success", (e, data) => {
-        toast.success("Sample Added Successfully.");
+        let parsedData = JSON.parse(data);
+
+        if (parsedData.success) {
+          toast.success("Sample added Successfully.");
+          refetchSample();
+
+          setSampleDetail({
+            sampleName: "",
+            description: "",
+          });
+
+          setIsEdit({
+            flag: false,
+            id: undefined,
+          });
+        } else {
+          toast.warn(parsedData.msg);
+        }
       });
     } else {
-      ipcRenderer.send("updateSample:load", sampleDetail);
+      ipcRenderer.send("updateSample:load", formatedData);
 
       ipcRenderer.on("updateSample:success", (e, data) => {
         toast.success("Sample Updated Successfully.");
+        refetchSample();
+
+        setSampleDetail({
+          sampleName: "",
+          description: "",
+        });
+
+        setIsEdit({
+          flag: false,
+          id: undefined,
+        });
       });
     }
-
-    setSampleDetail({
-      sampleName: "",
-      description: "",
-    });
-    refetchSample();
-
-    setIsEdit({
-      flag: false,
-      id: undefined,
-    });
   };
 
   useEffect(() => {
@@ -52,6 +84,7 @@ const Samples = () => {
   }, []);
 
   const refetchSample = () => {
+    console.log("refetch calles");
     ipcRenderer.send("sampleList:load");
 
     ipcRenderer.on("sampleList:success", (e, data) => {
@@ -59,7 +92,8 @@ const Samples = () => {
     });
   };
 
-  const handleCancel = () => {
+  const handleCancelTwo = () => {
+    handleCancel();
     setSampleDetail({ description: "", sampleName: "" });
   };
 
@@ -81,12 +115,14 @@ const Samples = () => {
     });
   };
 
+  console.log("sample list", sampleList);
+
   return (
     <div className="row">
       <div className="col-12">
-        <p className="detail-header">Add Samples here</p>
-        <div className="row mb-2">
-          <div className="col-6">
+        <p className="text-header">Add Samples here</p>
+        <div className="d-flex justify-content-center">
+          <div className="col-6 mr-5">
             <TextBox
               label="Sample Name"
               name="sampleName"
@@ -105,21 +141,21 @@ const Samples = () => {
         </div>
 
         <div className="d-flex justify-content-center">
-          <div className="me-2 cursor-pointer">
+          <div className="mr-5 cursor-pointer">
             <CustomButton label="Save" onClick={handleAddSample} />
           </div>
           <div>
             <CustomButton
               label="Cancel"
               className="btn-secondary"
-              onClick={handleCancel}
+              onClick={handleCancelTwo}
             />
           </div>
         </div>
       </div>
 
-      <div className="col-12 mt-2">
-        <table className="table">
+      <div className="d-flex justify-content-center mt-5">
+        <table className="table" border={1} width={"100%"}>
           <thead>
             <tr>
               <th>Sample Name</th>
@@ -128,7 +164,7 @@ const Samples = () => {
             </tr>
           </thead>
           <tbody>
-            {sampleList.map((sample, index) => {
+            {currentItems.map((sample, index) => {
               return (
                 <tr key={index}>
                   <td>{sample.sampleName}</td>
@@ -149,6 +185,27 @@ const Samples = () => {
             })}
           </tbody>
         </table>
+      </div>
+      <div>
+        <ReactPaginate
+          breakLabel="..."
+          nextLabel=">"
+          onPageChange={handlePageClick}
+          pageRangeDisplayed={5}
+          pageCount={pageCount}
+          previousLabel="<"
+          renderOnZeroPageCount={null}
+          containerClassName="pagination"
+          pageClassName="page-item"
+          pageLinkClassName="page-link"
+          previousClassName="page-item"
+          previousLinkClassName="page-link"
+          nextClassName="page-item"
+          nextLinkClassName="page-link"
+          breakClassName="page-item"
+          breakLinkClassName="page-link"
+          activeClassName="active"
+        />
       </div>
     </div>
   );

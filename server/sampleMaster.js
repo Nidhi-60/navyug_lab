@@ -12,7 +12,7 @@ const unitList = async (con, mainWindow) => {
 
 const sampleSearch = async (con, mainWindow) => {
   try {
-    let qry = `select [sampleName],[_id] from sample`;
+    let qry = `select [sampleName],[_id] from sample ORDER BY sampleName ASC`;
 
     let result = await con.query(qry);
 
@@ -24,7 +24,7 @@ const sampleSearch = async (con, mainWindow) => {
 
 const sampleList = async (con, mainWindow) => {
   try {
-    let qry = `select * from sample`;
+    let qry = `select * from sample ORDER BY sampleName ASC`;
 
     let result = await con.query(qry);
 
@@ -38,11 +38,26 @@ const addSample = async (con, mainWindow, data) => {
   try {
     let { sampleName, description } = data;
 
-    let qry = `insert into sample (sampleName, description) values ('${sampleName}', '${description}')`;
+    let findSampleQry = `SELECT sampleName FROM sample WHERE sampleName='${sampleName}'`;
 
-    let result = await con.query(qry);
+    let queryRes = await con.query(findSampleQry);
 
-    mainWindow.webContents.send("addSample:success", JSON.stringify(result));
+    let parsedData = JSON.parse(JSON.stringify(queryRes));
+    if (parsedData.length > 0) {
+      mainWindow.webContents.send(
+        "addSample:success",
+        JSON.stringify({ success: false, msg: "sample already exists" })
+      );
+    } else {
+      let qry = `insert into sample (sampleName, description) values ('${sampleName}', '${description}')`;
+
+      let result = await con.query(qry);
+
+      mainWindow.webContents.send(
+        "addSample:success",
+        JSON.stringify({ success: true })
+      );
+    }
   } catch (e) {
     console.log(e);
   }
@@ -53,8 +68,6 @@ const updateSample = async (con, mainWindow, data) => {
     let { sampleName, description } = data;
 
     let qry = `UPDATE sample SET sampleName='${sampleName}', description='${description}' WHERE [_id]=${data._id};`;
-
-    console.log(qry);
 
     let result = await con.query(qry);
 
@@ -109,11 +122,27 @@ const addSampleProperty = async (con, mainWindow, data) => {
   try {
     let { propertyName, description } = data;
 
-    let qry = `insert into sampleProperty (propertyName, description) values ('${propertyName}', '${description}')`;
+    let findSampleQry = `SELECT propertyName FROM sampleProperty WHERE propertyName='${propertyName}'`;
 
-    let result = await con.query(qry);
+    let queryRes = await con.query(findSampleQry);
 
-    mainWindow.webContents.send("addProperty:success", JSON.stringify(result));
+    let parsedData = JSON.parse(JSON.stringify(queryRes));
+
+    if (parsedData.length > 0) {
+      mainWindow.webContents.send(
+        "addProperty:success",
+        JSON.stringify({ success: false, msg: "Property Already Exists." })
+      );
+    } else {
+      let qry = `insert into sampleProperty (propertyName, description) values ('${propertyName}', '${description}')`;
+
+      let result = await con.query(qry);
+
+      mainWindow.webContents.send(
+        "addProperty:success",
+        JSON.stringify({ success: true })
+      );
+    }
   } catch (e) {
     console.log(e);
   }
@@ -148,6 +177,7 @@ INNER JOIN
     sampleProperty sp ON pm.[pid] = sp.[_id]  
 WHERE 
     pm.[sid] = ${data}
+    ORDER BY propertyName
     `;
 
     let result = await con.query(qry);
@@ -172,7 +202,7 @@ WHERE
 
 const sampleSearchProperty = async (con, mainWindow) => {
   try {
-    let qry = `select [propertyName], [_id] from sampleProperty`;
+    let qry = `select [propertyName], [_id] from sampleProperty ORDER BY propertyName ASC`;
 
     let result = await con.query(qry);
 
@@ -221,7 +251,7 @@ const addMapping = async (con, mainWindow, data) => {
 
 const propertyList = async (con, mainWindow) => {
   try {
-    let qry = `select * from sampleProperty`;
+    let qry = `select * from sampleProperty ORDER BY propertyName ASC`;
 
     let result = await con.query(qry);
 
