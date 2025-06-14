@@ -2,12 +2,12 @@ import React, { useEffect, useState } from "react";
 import TextBox from "../common/TextBox";
 import { ipcRenderer } from "electron";
 import CustomButton from "../common/Button";
-import { toast } from "react-toastify";
 import { ICONS } from "../constant/icons";
 import { strUpperCase } from "../utils/strUpperCase";
 
 import usePagination from "../hooks/usePagination";
 import ReactPaginate from "react-paginate";
+import toast from "react-hot-toast";
 
 const Samples = (props) => {
   const { handleCancel } = props;
@@ -56,7 +56,7 @@ const Samples = (props) => {
             id: undefined,
           });
         } else {
-          toast.warn(parsedData.msg);
+          toast.error(parsedData.msg);
         }
       });
     } else {
@@ -84,7 +84,6 @@ const Samples = (props) => {
   }, []);
 
   const refetchSample = () => {
-    console.log("refetch calles");
     ipcRenderer.send("sampleList:load");
 
     ipcRenderer.on("sampleList:success", (e, data) => {
@@ -115,8 +114,6 @@ const Samples = (props) => {
     });
   };
 
-  console.log("sample list", sampleList);
-
   return (
     <div className="row">
       <div className="col-12">
@@ -142,7 +139,11 @@ const Samples = (props) => {
 
         <div className="d-flex justify-content-center">
           <div className="mr-5 cursor-pointer">
-            <CustomButton label="Save" onClick={handleAddSample} />
+            <CustomButton
+              label={isedit.flag ? "Update" : "Save"}
+              onClick={handleAddSample}
+              className="btn-primary"
+            />
           </div>
           <div>
             <CustomButton
@@ -164,7 +165,7 @@ const Samples = (props) => {
             </tr>
           </thead>
           <tbody>
-            {currentItems.map((sample, index) => {
+            {sampleList.map((sample, index) => {
               return (
                 <tr key={index}>
                   <td>{sample.sampleName}</td>
@@ -186,7 +187,7 @@ const Samples = (props) => {
           </tbody>
         </table>
       </div>
-      <div>
+      {/* <div>
         <ReactPaginate
           breakLabel="..."
           nextLabel=">"
@@ -206,7 +207,7 @@ const Samples = (props) => {
           breakLinkClassName="page-link"
           activeClassName="active"
         />
-      </div>
+      </div> */}
     </div>
   );
 };

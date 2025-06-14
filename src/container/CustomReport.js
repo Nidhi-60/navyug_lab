@@ -7,7 +7,8 @@ import CustomButton from "../common/Button";
 import CustomReportPrint from "../component/CustomReportPrint";
 import ComponentToPrint from "../component/ComponentToPrint";
 import { useReactToPrint } from "react-to-print";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
+import PrintBlock from "./PrintBlock";
 
 const CustomReport = () => {
   let currentDate = new Date();
@@ -18,7 +19,7 @@ const CustomReport = () => {
     toDate: currentDate,
     sampleName: "",
     partyName: "",
-    account: "",
+    account: { label: "Y", value: "Y" },
   });
   const [sampleOptions, setSampleOptions] = useState([]);
   const [partyList, setPartyList] = useState([]);
@@ -34,12 +35,12 @@ const CustomReport = () => {
   }, []);
 
   useEffect(() => {
-    ipcRenderer.send("searchParty:load");
+    ipcRenderer.send("accountSearchParty:load", filterData?.account?.value);
 
-    ipcRenderer.on("searchParty:success", (e, data) => {
+    ipcRenderer.on("accountSearchParty:success", (e, data) => {
       setPartyList(JSON.parse(data));
     });
-  }, []);
+  }, [filterData.account.value]);
 
   const handleAfterPrint = useCallback(() => {
     console.log("`onAfterPrint` called");
@@ -59,13 +60,14 @@ const CustomReport = () => {
 
   useEffect(() => {
     if (reportData.length > 0) {
-      handlePrint();
+      // handlePrint();
+      ipcRenderer.send("print", componentRef.current.innerHTML);
     }
   }, [reportData]);
 
   const accountDrop = [
-    { _id: "no", name: "No" },
-    { _id: "yes", name: "Account" },
+    { _id: "N", name: "N" },
+    { _id: "Y", name: "Y" },
   ];
 
   const handleTextChange = (e) => {
@@ -85,8 +87,6 @@ const CustomReport = () => {
       account: filterData.account.value,
     };
 
-    console.log(updatedFilter);
-
     ipcRenderer.send("loadReport:load", updatedFilter);
 
     ipcRenderer.on("loadReport:success", (e, data) => {
@@ -101,7 +101,7 @@ const CustomReport = () => {
       if (res.length > 0) {
         setReportData(JSON.parse(data));
       } else {
-        toast.warn("No data found.");
+        toast.error("No data found.");
       }
     });
   };
@@ -119,51 +119,57 @@ const CustomReport = () => {
 
   return (
     <>
-      <div className="row mb-3">
-        <div className="col-6 mb-2">
-          <SearchableDrop
-            label="Sample Name"
-            data={sampleOptions}
-            handleChange={(e) => handleDropChange(e, "sampleName")}
-            value={filterData.sampleName}
-          />
+      <div className="">
+        <div className="d-flex justify-content-center mb-3">
+          <div className="col-6 mr-5">
+            <SearchableDrop
+              label="Sample Name"
+              data={sampleOptions}
+              handleChange={(e) => handleDropChange(e, "sampleName")}
+              value={filterData.sampleName}
+            />
+          </div>
+          <div className="col-6 mr-5">
+            <SearchableDrop
+              label="Party Name"
+              data={partyList}
+              handleChange={(e) => handleDropChange(e, "partyName")}
+              value={filterData.partyName}
+            />
+          </div>
+          <div className="col-6 mr-5">
+            <SearchableDrop
+              label="Account"
+              data={accountDrop}
+              handleChange={(e) => handleDropChange(e, "account")}
+              value={filterData.account}
+            />
+          </div>
         </div>
-        <div className="col-6 mb-2">
-          <SearchableDrop
-            label="Party Name"
-            data={partyList}
-            handleChange={(e) => handleDropChange(e, "partyName")}
-            value={filterData.partyName}
-          />
-        </div>
-        <div className="col-6 mb-2">
-          <SearchableDrop
-            label="Account"
-            data={accountDrop}
-            handleChange={(e) => handleDropChange(e, "account")}
-            value={filterData.account}
-          />
-        </div>
-        <div className="col-6 mb-2">
-          <DateComponent
-            label="From Date"
-            name="fromDate"
-            value={moment(filterData.fromDate).format("YYYY-MM-DD")}
-            onChange={handleTextChange}
-          />
-        </div>
-        <div className="col-6 mb-2">
-          <DateComponent
-            label="To Date"
-            name="toDate"
-            value={moment(filterData.toDate).format("YYYY-MM-DD")}
-            onChange={handleTextChange}
-          />
+        <div className="d-flex justify-content-center mb-5">
+          <div className="col-6 mr-5">
+            <DateComponent
+              label="From Date"
+              name="fromDate"
+              value={moment(filterData.fromDate).format("YYYY-MM-DD")}
+              onChange={handleTextChange}
+              width="200"
+            />
+          </div>
+          <div className="col-6">
+            <DateComponent
+              label="To Date"
+              name="toDate"
+              value={moment(filterData.toDate).format("YYYY-MM-DD")}
+              onChange={handleTextChange}
+              width="200"
+            />
+          </div>
         </div>
       </div>
-      <div className="row justify-content-center">
+      <div className="d-flex justify-content-center mt-2">
         <div className="col-3">
-          <CustomButton onClick={handleLoadReport} className="me-2">
+          <CustomButton onClick={handleLoadReport} className="mr-5 btn-primary">
             Load Report
           </CustomButton>
           <CustomButton onClick={handleClearReport} className="btn-secondary">
@@ -173,10 +179,16 @@ const CustomReport = () => {
       </div>
 
       {/* <CustomReportPrint report={reportData} /> */}
-      {reportData.length > 0 && (
+      {/* {reportData.length > 0 && (
         <ComponentToPrint ref={componentRef} className="printContent">
           <CustomReportPrint report={reportData} />
         </ComponentToPrint>
+      )} */}
+
+      {reportData.length > 0 && (
+        <PrintBlock componentRef={componentRef}>
+          <CustomReportPrint report={reportData} />
+        </PrintBlock>
       )}
     </>
   );

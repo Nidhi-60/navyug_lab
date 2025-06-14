@@ -20,6 +20,7 @@ const DatePagination = (props) => {
             value={moment(currentFilter).format("YYYY-MM-DD")}
             onChange={handleChange}
             width="200"
+            max={moment(new Date()).format("YYYY-MM-DD")}
           />
         </div>
         <div onClick={handleNextDate} className="pagination-icon ms-2">

@@ -88,7 +88,17 @@ module.exports = {
   },
   target: "electron-renderer",
   plugins: [
-    new HtmlWebpackPlugin({ title: "Electron App" }),
+    new HtmlWebpackPlugin({
+      title: "Navyug Laboratory",
+
+      meta: {
+        "http-equiv": {
+          "http-equiv": "Content-Security-Policy",
+          content:
+            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:;",
+        },
+      },
+    }),
     new webpack.DefinePlugin({
       "process.env.NODE_ENV": JSON.stringify("development"),
     }),

@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from "react";
 import TextBox from "../common/TextBox";
 import CustomButton from "../common/Button";
-import DropDown from "../common/DropDown";
 import SearchableDrop from "../common/SearchableDrop";
 import { ipcRenderer } from "electron";
-import { toast } from "react-toastify";
 import { ICONS } from "../constant/icons";
+import toast from "react-hot-toast";
 
 const SampleMaster = (props) => {
   const { handleCancel } = props;
@@ -23,9 +22,6 @@ const SampleMaster = (props) => {
   });
 
   const [currentSample, setCurrentSample] = useState("");
-
-  console.log("property list", propertyList);
-  console.log("new Property", newProperty);
 
   useEffect(() => {
     ipcRenderer.send("unit:load");
@@ -101,7 +97,7 @@ const SampleMaster = (props) => {
     });
 
     if (findProperty) {
-      toast.warn("Same Property with unit and price exists");
+      toast.error("Same Property with unit and price exists");
     } else {
       setNewProperty([
         ...newProperty,
@@ -141,8 +137,6 @@ const SampleMaster = (props) => {
       toast.success("Mapping Successfully.");
     });
   };
-
-  console.log("property list", propertyList);
 
   const handleDeleteProperty = (e, pIndex) => {
     setNewProperty(newProperty.filter((ele, index) => index !== pIndex));
@@ -188,16 +182,24 @@ const SampleMaster = (props) => {
                   return (
                     <tr key={index}>
                       <td>
-                        <TextBox value={ele.propertyName} width="300" />
+                        <TextBox
+                          value={ele.propertyName}
+                          width="300"
+                          readOnly
+                        />
                       </td>
                       <td>
-                        <input type="checkbox" checked={ele.isDefault} />
+                        <input
+                          type="checkbox"
+                          checked={ele.isDefault}
+                          readOnly
+                        />
                       </td>
                       <td>
-                        <TextBox value={ele.punit} width="100" />
+                        <TextBox value={ele.punit} width="100" readOnly />
                       </td>
                       <td>
-                        <TextBox value={ele.pprice} width="100" />
+                        <TextBox value={ele.pprice} width="100" readOnly />
                       </td>
                       <td>
                         <span
@@ -220,16 +222,20 @@ const SampleMaster = (props) => {
                   return (
                     <tr key={index}>
                       <td>
-                        <TextBox value={ele.pid.label} width="300" />
+                        <TextBox value={ele.pid.label} width="300" readOnly />
                       </td>
                       <td>
-                        <input type="checkbox" checked={ele.isDefault} />
+                        <input
+                          type="checkbox"
+                          checked={ele.isDefault}
+                          readOnly
+                        />
                       </td>
                       <td>
-                        <TextBox value={ele.punit.label} width="100" />
+                        <TextBox value={ele.punit.label} width="100" readOnly />
                       </td>
                       <td>
-                        <TextBox value={ele.pprice} width="100" />
+                        <TextBox value={ele.pprice} width="100" readOnly />
                       </td>
 
                       <td>
@@ -248,8 +254,8 @@ const SampleMaster = (props) => {
             <table className="table">
               <thead>
                 <tr>
-                  {propertyHeader.map((ele) => {
-                    return <th>{ele.label}</th>;
+                  {propertyHeader.map((ele, index) => {
+                    return <th key={index}>{ele.label}</th>;
                   })}
                 </tr>
               </thead>
@@ -306,7 +312,7 @@ const SampleMaster = (props) => {
             <CustomButton
               label="Save Mapping"
               onClick={handleSaveMapping}
-              className="mr-5"
+              className="mr-5 btn-primary"
             />
 
             <CustomButton

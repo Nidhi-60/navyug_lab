@@ -17,11 +17,11 @@
   display: flex;
 }
 
-.justify-content-center{
+.justify-content-center {
   justify-content: center;
 }
 
-.align-items-center{
+.align-items-center {
   align-items: center;
 }
 
@@ -41,8 +41,9 @@
 
 input[type="text"],
 textarea,
-input[type="password"], input[type="date"] {
-  width: 450px;  
+input[type="password"],
+input[type="date"] {
+  width: 450px;
   padding: 3px;
   border: 1px solid gray;
   border-radius: 5px;
@@ -73,7 +74,7 @@ label {
   font-weight: bold;
 }
 
-button{
+button {
   padding: 5px;
   width: auto;
   border: 1px solid #808080bd;
@@ -81,23 +82,23 @@ button{
   cursor: pointer;
 }
 
-.btn-primary{
+.btn-primary {
   background-color: #9e444b;
   border: 1px solid #9d424bd9;
   color: white;
 }
 
-.btn-secondary{
+.btn-secondary {
   background-color: #00000075;
   border: 1px solid #00000012;
 
 }
 
-.mr-5{
+.mr-5 {
   margin-right: 5px;
 }
 
-.ml-5{
+.ml-5 {
   margin-left: 5px;
 }
 
@@ -106,40 +107,43 @@ button{
   margin-bottom: 3px;
 }
 
-.mb-5{
+.mb-5 {
   margin-bottom: 5px;
 }
 
-.mt-5{
+.mt-5 {
   margin-top: 5px;
 }
 
-.detail-box{
+.detail-box {
   width: 50%;
 }
 
-.cursor-pointer{
+.cursor-pointer {
   cursor: pointer;
 }
 
-.mapping-box{
+.mapping-box {
   width: 30%;
 }
 
-td, th{
+td,
+th {
   text-align: center;
-  
+
 }
 
-.transaction-table td, .transaction-table th{
-  font-size: 12px;
-  padding: 1px;
+.transaction-table td,
+.transaction-table th {
+  font-size: 10px;
+  padding: 0px;
 }
 
-.sample-detail{
-  width:35%;
+.sample-detail {
+  width: 35%;
 }
-.transaction-table{
+
+.transaction-table {
   width: 100%;
 }
 
@@ -164,10 +168,48 @@ td, th{
 }
 
 .page-item.active {
-  background-color:#9e444b;
+  background-color: #9e444b;
   color: #fff !important;
   border-color: #9e444b;
 }
+
+.btn-secondary {
+  background-color: #534e4e;
+  color: #fff
+}
+
+.btn-primary {
+  background-color: #9e444b;
+  color: #fff;
+}
+
+dialog {
+     border: none;
+    border-radius: 12px;
+    padding: 2rem;
+    max-width: 400px;
+    box-shadow: 0 20px 30px rgba(0, 0, 0, 0.1);
+    background: white;
+    text-align: center;
+    transition: opacity 0.3s ease;
+    top: 25%;
+    z-index: 99;
+}
+
+dialog p{
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.backdrop{
+  position: fixed;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    z-index: 99;
+    opacity: 0.3;
+}
+
 
 
 
@@ -179,4 +221,19 @@ td, th{
   .printContent {
     display: block;
   }
+}
+
+
+
+
+.print-preview {
+  background: #eee;
+  padding: 20px;
+}
+.print-page {
+  background: white;
+  width: 794px; /* A4 size in px */
+  height: 1123px;
+  margin: auto;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
 }

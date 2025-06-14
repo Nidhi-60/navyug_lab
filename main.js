@@ -1,13 +1,6 @@
 const path = require("path");
 const url = require("url");
-const {
-  app,
-  BrowserWindow,
-  ipcMain,
-  Menu,
-  screen,
-  webContents,
-} = require("electron");
+const { app, BrowserWindow, ipcMain, Menu, screen } = require("electron");
 const { connection } = require("./config/dbConnection");
 const {
   list,
@@ -16,6 +9,7 @@ const {
   deleteRecord,
   searchParty,
   getPartyAddress,
+  accountSearchParty,
 } = require("./server/partyDetail");
 const { signin, setUser } = require("./server/auth");
 const {
@@ -33,6 +27,9 @@ const {
   updateProperty,
   deleteProperty,
   deletePredefinedMapping,
+  addUnit,
+  updateUnit,
+  deleteUnit,
 } = require("./server/sampleMaster");
 const { search } = require("./server/location");
 const {
@@ -116,17 +113,17 @@ function createMainWindow() {
     mainWindow.show();
 
     // Open devtools if dev
-    if (isDev) {
-      // const {
-      // 	default: installExtension,
-      // 	REACT_DEVELOPER_TOOLS,
-      // } = require('electron-devtools-installer')
+    // if (isDev) {
+    // const {
+    // 	default: installExtension,
+    // 	REACT_DEVELOPER_TOOLS,
+    // } = require('electron-devtools-installer')
 
-      // installExtension(REACT_DEVELOPER_TOOLS).catch((err) =>
-      // 	console.log('Error loading React DevTools: ', err)
-      // )
-      mainWindow.webContents.openDevTools();
-    }
+    // installExtension(REACT_DEVELOPER_TOOLS).catch((err) =>
+    // 	console.log('Error loading React DevTools: ', err)
+    // )
+    mainWindow.webContents.openDevTools();
+    // }
   });
 
   mainWindow.on("close", (e) => {
@@ -227,6 +224,13 @@ const template = [
         },
       },
       {
+        label: "Unit",
+        accelerator: "ctrl+u",
+        click: () => {
+          mainWindow.webContents.send("menu", { LABEL: "unit" });
+        },
+      },
+      {
         label: "Sample Master",
         click: () => {
           mainWindow.webContents.send("menu", { LABEL: "sampleMaster" });
@@ -321,6 +325,10 @@ ipcMain.on("deleteParyDetail:load", async (e, data) =>
 
 ipcMain.on("searchParty:load", async () => searchParty(con, mainWindow));
 
+ipcMain.on("accountSearchParty:load", async (e, data) =>
+  accountSearchParty(con, mainWindow, data)
+);
+
 // sample master
 ipcMain.on("sampleSearch:load", async () => sampleSearch(con, mainWindow));
 
@@ -366,8 +374,6 @@ ipcMain.on("deletePredefinedMapping:load", async (e, data) =>
   deletePredefinedMapping(con, mainWindow, data)
 );
 
-ipcMain.on("unit:load", async () => unitList(con, mainWindow));
-
 // location
 ipcMain.on("location:load", async () => search(con, mainWindow));
 
@@ -407,3 +413,105 @@ ipcMain.on("loadReport:load", (e, data) => customReport(con, mainWindow, data));
 ipcMain.on("companySearch:load", (e, data) =>
   getPartyAddress(con, mainWindow, data)
 );
+
+ipcMain.on("unit:load", async () => unitList(con, mainWindow));
+
+ipcMain.on("addUnit:load", async (e, data) => addUnit(con, mainWindow, data));
+
+ipcMain.on("updateUnit:load", async (e, data) =>
+  updateUnit(con, mainWindow, data)
+);
+
+ipcMain.on("deleteUnit:load", async (e, data) =>
+  deleteUnit(con, mainWindow, data)
+);
+
+ipcMain.on("print", (e, htmlContent) => {
+  // const printWindow = new BrowserWindow({
+  //   width: 800,
+  //   height: 600,
+  //   show: true, // hide window initially
+  //   webPreferences: {
+  //     nodeIntegration: false,
+  //     contextIsolation: true,
+  //   },
+  // });
+
+  // printWindow.loadURL(
+  //   "data:text/html;charset=utf-8," +
+  //     encodeURIComponent(`
+  //       <html>
+  //         <head>
+  //           <title>Print</title>
+  //           <style>
+  //             body { font-family: sans-serif; padding: 20px; }
+  //           </style>
+  //         </head>
+  //         <body>
+  //           ${htmlContent}
+  //           <script>
+  //             window.onload = () => {
+  //               window.electronAPI = require('electron');
+  //             };
+  //           </script>
+  //         </body>
+  //       </html>
+  //     `)
+  // );
+
+  // printWindow.webContents.on("did-finish-load", () => {
+  //   printWindow.webContents.print(
+  //     {
+  //       silent: false, // shows print preview
+  //       printBackground: true,
+  //     },
+  //     (success, errorType) => {
+  //       if (!success) console.error("Print failed: ", errorType);
+  //       printWindow.close();
+  //     }
+  //   );
+  // });
+
+  const printWindow = new BrowserWindow({
+    width: 900,
+    height: 700,
+    show: true, // must be true to preview
+    webPreferences: {
+      contextIsolation: true,
+    },
+    frame: false,
+    transparent: false,
+  });
+
+  const fullHtml = `
+    <html>
+      <head>
+        <title>Print Preview</title>
+        <style>
+          body {
+            font-family: sans-serif;
+            padding: 20px;
+          }
+          h1 {
+            margin-bottom: 10px;
+          }
+        </style>
+      </head>
+      <body>
+        ${htmlContent}
+         <script>
+        window.onload = () => {
+          window.print();
+        };
+        window.onafterprint = () => {
+          window.close();
+        };
+      </script>
+      </body>
+    </html>
+  `;
+
+  printWindow.loadURL(
+    "data:text/html;charset=utf-8," + encodeURIComponent(fullHtml)
+  );
+});

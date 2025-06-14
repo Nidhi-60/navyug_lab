@@ -1,7 +1,7 @@
 import React from "react";
 
 const DateComponent = (props) => {
-  const { name, value, onChange, label, width } = props;
+  const { name, value, onChange, label, width, min, max } = props;
 
   return (
     <>
@@ -14,6 +14,8 @@ const DateComponent = (props) => {
           onChange={onChange}
           className="form-control"
           style={{ width: `${width}px` }}
+          min={min}
+          max={max}
         />
       </div>
     </>

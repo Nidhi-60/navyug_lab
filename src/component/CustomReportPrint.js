@@ -4,8 +4,6 @@ import React from "react";
 const CustomReportPrint = (props) => {
   const { report } = props;
 
-  console.log("report", report);
-
   return (
     <div className="m-5">
       <table className="table">

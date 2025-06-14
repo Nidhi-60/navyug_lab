@@ -1,6 +1,3 @@
-// import "bootstrap/dist/css/bootstrap.min.css";
-import "react-toastify/dist/ReactToastify.css";
-// import "./assests/css/index.css";
 import "./assests/css/app.css";
 import "./assests/fonts/recog-icon/style.css";
 import { ipcRenderer } from "electron";
@@ -9,7 +6,7 @@ import PartyMaster from "./container/PartyMaster";
 import SampleMaster from "./container/SampleMaster";
 import SampleTransaction from "./container/SampleTransaction";
 import Signin from "./container/Auth/SignIn";
-import { toast, ToastContainer } from "react-toastify";
+
 import BillShow from "./container/BillShow";
 import CustomReport from "./container/CustomReport";
 import signinValidator from "./validation/signin";
@@ -17,6 +14,9 @@ import AddressPrint from "./container/AddressPrint";
 import Samples from "./container/Samples";
 import Properties from "./container/Properties";
 import Home from "./container/Home";
+import Unit from "./container/Unit";
+import { Toaster } from "react-hot-toast";
+import PrintBlock from "./container/PrintBlock";
 
 const App = () => {
   const [currentPage, setCurrentPage] = useState("signIn");
@@ -43,8 +43,8 @@ const App = () => {
 
   useEffect(() => {
     if (isAuth) {
-      setCurrentPage("sampleTransaction");
-      // setCurrentPage("partyMaster");
+      // setCurrentPage("sampleTransaction");
+      setCurrentPage("billShow");
     }
   }, [isAuth]);
 
@@ -58,19 +58,20 @@ const App = () => {
     setFormError({ ...formError, [e.target.name]: "" });
   };
 
-  const handleSignin = () => {
+  const handleSignin = (e) => {
+    e.preventDefault();
     const { formErrors, formValid } = signinValidator(signinDetail);
 
     if (formValid) {
       ipcRenderer.send("signin:load", signinDetail);
 
       ipcRenderer.on("signin:success", (e, data) => {
-        // toast.success("login Success.");
         let result = JSON.parse(data);
 
         if (result.success) {
           let userData = result.result[0];
           localStorage.setItem("user", JSON.stringify(userData));
+          ipcRenderer.send("setUser:load", userData);
           setCurrentPage("home");
         }
       });
@@ -126,11 +127,17 @@ const App = () => {
     case "addressPrint":
       displayBlock = <AddressPrint />;
       break;
+    case "unit":
+      displayBlock = <Unit handleCancel={handleCancel} />;
+      break;
+    case "print":
+      displayBlock = <PrintBlock />;
+      break;
   }
 
   return (
     <>
-      <ToastContainer limit={1} />
+      <Toaster limit={1} position="bottom-right" />
       <div className="container-fluid">{displayBlock}</div>
     </>
   );

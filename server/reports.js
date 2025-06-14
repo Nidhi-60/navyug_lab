@@ -5,7 +5,7 @@ const billShow = async (con, mainWindow, data) => {
     const { partyName, billNo, accountType, toDate, fromDate } = data;
     let updatedObj = {
       "t.partyId": partyName,
-      "p.account": accountType,
+      "p.account": `'${accountType}'`,
     };
 
     let setClauses = [];
@@ -50,8 +50,6 @@ WHERE
 `;
 
     let testQry = await con.query(qry);
-
-    // console.log("testqry", JSON.parse(JSON.stringify(testQry)));
 
     const groupedObject = {};
 
@@ -211,11 +209,7 @@ const customReport = async (con, mainWindow, data) => {
     t.[createdAt] BETWEEN #${fromDateUpdated}# AND #${toDateUpdated}# AND ${setClause}
   `;
 
-    console.log("qry", qry);
-
     let testQry = await con.query(qry);
-
-    console.log("test quett", JSON.parse(JSON.stringify(testQry)));
 
     const groupedResults = testQry.reduce((acc, row) => {
       let bill = acc.find((item) => item.billNo === row.billNo);
@@ -249,8 +243,6 @@ const customReport = async (con, mainWindow, data) => {
 
       return acc;
     }, []);
-
-    console.log("grouo result", groupedResults);
 
     mainWindow.webContents.send(
       "loadReport:success",

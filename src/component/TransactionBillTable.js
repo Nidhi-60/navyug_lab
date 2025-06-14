@@ -76,6 +76,7 @@ const TransactionBillTable = (props) => {
                         <CustomButton
                           label="Print"
                           onClick={(e) => handleId(e, ele.transactionId)}
+                          className="btn-primary"
                         />
                       </td>
                       <td rowSpan={ele.properties.length}>{ele?.sampleName}</td>
@@ -147,7 +148,7 @@ const TransactionBillTable = (props) => {
           </tbody>
         </table>
       </div>
-      <div>
+      {/* <div>
         <div>
           <ReactPaginate
             breakLabel="..."
@@ -169,7 +170,7 @@ const TransactionBillTable = (props) => {
             activeClassName="active"
           />
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

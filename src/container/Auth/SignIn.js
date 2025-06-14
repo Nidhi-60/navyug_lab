@@ -48,7 +48,7 @@ const Signin = (props) => {
               <CustomButton
                 label="Login"
                 onClick={handleSignin}
-                className="mr-5"
+                className="mr-5 btn-primary"
               />
               <CustomButton
                 label="Cancel"

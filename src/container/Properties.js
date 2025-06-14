@@ -2,11 +2,12 @@ import React, { useEffect, useState } from "react";
 import CustomButton from "../common/Button";
 import TextBox from "../common/TextBox";
 import { ipcRenderer } from "electron";
-import { toast } from "react-toastify";
+
 import { ICONS } from "../constant/icons";
 import { strUpperCase } from "../utils/strUpperCase";
 import usePagination from "../hooks/usePagination";
 import ReactPaginate from "react-paginate";
+import toast from "react-hot-toast";
 
 const Properties = (props) => {
   const { handleCancel } = props;
@@ -44,7 +45,7 @@ const Properties = (props) => {
         if (parsedData.success) {
           toast.success("Property Added Successfully.");
         } else {
-          toast.warn(parsedData.msg);
+          toast.error(parsedData.msg);
         }
 
         setPropertyDetail({
@@ -138,7 +139,11 @@ const Properties = (props) => {
           </div>
           <div className="d-flex justify-content-center">
             <div className="mr-5">
-              <CustomButton label="Save" onClick={handleAddProperty} />
+              <CustomButton
+                label="Save"
+                onClick={handleAddProperty}
+                className="btn-primary"
+              />
             </div>
             <div>
               <CustomButton
@@ -160,7 +165,7 @@ const Properties = (props) => {
               </tr>
             </thead>
             <tbody>
-              {currentItems.map((ele, index) => {
+              {propertyList.map((ele, index) => {
                 return (
                   <tr key={index}>
                     <td>{ele.propertyName}</td>
@@ -182,7 +187,7 @@ const Properties = (props) => {
             </tbody>
           </table>
         </div>
-        <div>
+        {/* <div>
           <ReactPaginate
             breakLabel="..."
             nextLabel=">"
@@ -202,7 +207,7 @@ const Properties = (props) => {
             breakLinkClassName="page-link"
             activeClassName="active"
           />
-        </div>
+        </div> */}
       </div>
     </>
   );

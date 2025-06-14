@@ -2,22 +2,32 @@ import React, { useEffect, useState } from "react";
 import Select from "react-select";
 
 const SearchableDrop = (props) => {
-  const { value, handleChange, data, label, formError, className, width } =
-    props;
+  const {
+    value,
+    handleChange,
+    data,
+    label,
+    formError,
+    className,
+    width,
+    sampleRef,
+  } = props;
   const [options, setOptions] = useState([]);
 
   const customStyles = {
-    control: (base) => ({
+    control: (base, state) => ({
       ...base,
       minHeight: "auto",
       height: "30px",
       padding: "0",
       borderRadius: "0",
-      borderColor: "#ccc",
+      borderColor: state.isFocused || state.isActive ? "#9e444b" : "#ccc",
+      borderWidth: state.isFocused ? "2px" : "1px",
       boxShadow: "none",
       "&:hover": {
-        borderColor: "#888",
+        borderColor: "#9e444b",
       },
+
       fontSize: "14px",
       width: `${width || 200}px`,
     }),
@@ -80,6 +90,7 @@ const SearchableDrop = (props) => {
         options={options}
         className={className}
         styles={customStyles}
+        ref={sampleRef}
       />
 
       {formError && <span className="text-error">{formError}</span>}

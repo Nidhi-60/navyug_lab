@@ -6,7 +6,7 @@ import moment from "moment";
 import { ipcRenderer } from "electron";
 import CustomButton from "../common/Button";
 import TransactionBillTable from "../component/TransactionBillTable";
-import { toast } from "react-toastify";
+
 import { useReactToPrint } from "react-to-print";
 import ComponentToPrint from "../component/ComponentToPrint";
 import AnalysisCertificate from "../component/AnalysisCertificate";
@@ -17,6 +17,7 @@ import AccountSummary from "../component/AccountSummary";
 import { getArrayValue } from "../utils/getArrayvalue";
 import usePagination from "../hooks/usePagination";
 import ReactPaginate from "react-paginate";
+import toast from "react-hot-toast";
 
 const SampleTransaction = (props) => {
   const { handleCancel } = props;
@@ -63,9 +64,11 @@ const SampleTransaction = (props) => {
     id: undefined,
   });
   const [editNewProperty, setEditNewProperty] = useState([]);
+  const sampleRef = useRef(null);
 
   useEffect(() => {
     fetchBill();
+    sampleRef.current.focus();
   }, [dateFilter]);
 
   useEffect(() => {
@@ -242,9 +245,18 @@ const SampleTransaction = (props) => {
     const currentDate = dateFilter;
 
     const nextDate = new Date(currentDate);
-    nextDate.setDate(currentDate.getDate() + 1);
 
-    setDateFilter(nextDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (nextDate > today) {
+      // alert("You can't select a date in the future");
+      toast.success("You can't select a date in the future");
+    } else {
+      nextDate.setDate(currentDate.getDate() + 1);
+
+      setDateFilter(nextDate);
+    }
   };
 
   const handleDateChange = (e) => {
@@ -253,6 +265,11 @@ const SampleTransaction = (props) => {
 
   const handleTextChange = (e) => {
     setFormError({ ...formError, [e.target.name]: "" });
+
+    if (e.target.name === "date") {
+      setDateFilter(e.target.value);
+    }
+
     setTransactionData({
       ...transactionData,
       [e.target.name]: e.target.value,
@@ -319,7 +336,7 @@ const SampleTransaction = (props) => {
             createdAt: moment(new Date()).format("YYYY-MM-DD"),
           },
           newEdit: editNewProperty.map((ele) => {
-            return { ...ele, pid: ele.pid.value };
+            return { ...ele, pid: ele.pid.value, paid: ele.paid || false };
           }),
         });
         ipcRenderer.on("updateBill:success", (e, data) => {
@@ -331,6 +348,7 @@ const SampleTransaction = (props) => {
             setTotalPrice(0);
             fetchMonthBill();
             setEditNewProperty([]);
+            sampleRef.current.focus();
           }
         });
       } else {
@@ -340,6 +358,7 @@ const SampleTransaction = (props) => {
           fetchBill();
           setTotalPrice(0);
           fetchMonthBill();
+          sampleRef.current.focus();
         });
       }
     } else {
@@ -361,8 +380,6 @@ const SampleTransaction = (props) => {
 
   const handleId = (e, id) => {
     if (printDataCount.length > 0) {
-      console.log("print count", printDataCount);
-
       let filteredData = billData.filter((ele, index) =>
         printDataCount.includes(index)
       );
@@ -408,8 +425,6 @@ const SampleTransaction = (props) => {
 
       if (result.length > 0) {
         let properties = result.reduce((curr, acc) => {
-          console.log("current", curr);
-          console.log("acc", acc);
           return [...curr, ...acc.properties];
         }, []);
 
@@ -664,7 +679,7 @@ const SampleTransaction = (props) => {
       );
 
       if (alreadyExists) {
-        toast.warn("Property already exists.");
+        toast.error("Property already exists.");
       } else {
         setTransactionData({
           ...transactionData,
@@ -685,7 +700,7 @@ const SampleTransaction = (props) => {
           ele.price === newTransaction.price
       );
       if (alreadyExists) {
-        toast.warn("Property already exists.");
+        toast.error("Property already exists.");
       } else {
         setEditNewProperty([...editNewProperty, newTransaction]);
 
@@ -783,8 +798,6 @@ const SampleTransaction = (props) => {
     }
   };
 
-  console.log(printDataCount);
-
   return (
     <div className="row">
       {Object.keys(billPdfData).length > 0 && (
@@ -814,6 +827,7 @@ const SampleTransaction = (props) => {
                   value={transactionData.date}
                   onChange={handleTextChange}
                   width="130"
+                  max={moment(new Date()).format("YYYY-MM-DD")}
                 />
               </div>
               <div className="col-5">
@@ -824,6 +838,7 @@ const SampleTransaction = (props) => {
                   handleChange={(e) => handleSearchDropChange(e, "sampleId")}
                   formError={formError.sampleId}
                   width="300"
+                  sampleRef={sampleRef}
                 />
               </div>
             </div>
@@ -874,6 +889,7 @@ const SampleTransaction = (props) => {
                               <TextBox
                                 className="disabled w-20"
                                 value={getPartyAccount()?.account}
+                                readOnly
                               />
                             </td>
                             <td>
@@ -899,6 +915,7 @@ const SampleTransaction = (props) => {
                                 name="price"
                                 value={ele.price}
                                 width="100"
+                                readOnly
                               />
                             </td>
                             <td>
@@ -929,6 +946,7 @@ const SampleTransaction = (props) => {
                                 <TextBox
                                   className="disabled w-20"
                                   value={getPartyAccount()?.account}
+                                  readOnly
                                 />
                               </td>
                               <td>
@@ -938,7 +956,7 @@ const SampleTransaction = (props) => {
                                   handleChange={(e) =>
                                     handleNewEditPropertyDropChange(e, index)
                                   }
-                                  width="100"
+                                  width="200"
                                 />
                               </td>
                               <td>
@@ -956,6 +974,7 @@ const SampleTransaction = (props) => {
                                   name="price"
                                   value={ele.price}
                                   width="100"
+                                  readOnly
                                 />
                               </td>
                               <td>
@@ -981,6 +1000,7 @@ const SampleTransaction = (props) => {
                           <TextBox
                             className="disabled w-20"
                             value={getPartyAccount()?.account}
+                            readOnly
                           />
                         </td>
                         <td>
@@ -1003,6 +1023,7 @@ const SampleTransaction = (props) => {
                             name="price"
                             value={newTransaction.price}
                             width="100"
+                            readOnly
                           />
                         </td>
                         <td>
@@ -1045,6 +1066,7 @@ const SampleTransaction = (props) => {
               <CustomButton
                 label={editBill.flag ? "Update" : "Save"}
                 onClick={handleSaveBill}
+                className="btn-primary"
               />
             </div>
             <div className="col">
@@ -1063,7 +1085,7 @@ const SampleTransaction = (props) => {
             handleNextDate={handleNextDate}
             handlePreviousDate={handlePreviousDate}
             header={header}
-            billData={currentItems}
+            billData={billData}
             handlePrint={handlePrint}
             handleId={handleId}
             handleTestResult={handleTestResult}

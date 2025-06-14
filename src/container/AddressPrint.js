@@ -32,7 +32,6 @@ const AddressPrint = () => {
     ipcRenderer.send("companySearch:load", company.value);
 
     ipcRenderer.on("companySearch:success", (e, data) => {
-      // console.log(JSON.parse(data));
       let addressDetail = JSON.parse(data);
       setAddress(addressDetail[0]);
     });

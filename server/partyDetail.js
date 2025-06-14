@@ -163,10 +163,24 @@ const searchParty = async (con, mainWindow) => {
   }
 };
 
+const accountSearchParty = async (con, mainWindow, data) => {
+  try {
+    console.log(data);
+    let qry = `select [companyName],[_id],[account] from partyDetail WHERE [account]='${data}' ORDER BY companyName ASC`;
+
+    let result = await con.query(qry);
+
+    mainWindow.webContents.send(
+      "accountSearchParty:success",
+      JSON.stringify(result)
+    );
+  } catch (e) {
+    console.log(e);
+  }
+};
+
 const getPartyAddress = async (con, mainWindow, data) => {
   try {
-    console.log("data", data);
-
     let qry = `select [address] from partyDetail WHERE [_id] = ${data}`;
 
     let result = await con.query(qry);
@@ -187,4 +201,5 @@ module.exports = {
   deleteRecord,
   searchParty,
   getPartyAddress,
+  accountSearchParty,
 };

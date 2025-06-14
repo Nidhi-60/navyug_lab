@@ -10,6 +10,50 @@ const unitList = async (con, mainWindow) => {
   }
 };
 
+const addUnit = async (con, mainWindow, data) => {
+  const { unitName, _id } = data;
+
+  try {
+    let qry = `insert into unit (unitName, _id) values ('${unitName}', '${_id}')`;
+
+    let result = await con.query(qry);
+
+    mainWindow.webContents.send("addUnit:success", JSON.stringify(result));
+  } catch (e) {
+    console.log(e);
+  }
+};
+
+const updateUnit = async (con, mainWindow, data) => {
+  const { unitName, _id, uid } = data;
+
+  console.log("data", data);
+
+  try {
+    let qry = `UPDATE unit SET unitName='${unitName}', _id='${_id}' WHERE uid=${uid}`;
+
+    let result = await con.query(qry);
+
+    mainWindow.webContents.send("updateUnit:success", JSON.stringify(result));
+  } catch (e) {
+    console.log(e);
+  }
+};
+
+const deleteUnit = async (con, mainWindow, data) => {
+  const { uid } = data;
+
+  try {
+    let qry = `DELETE FROM unit WHERE uid=${uid}`;
+
+    let result = await con.query(qry);
+
+    mainWindow.webContents.send("deleteUnit:success", JSON.stringify(result));
+  } catch (e) {
+    console.log(e);
+  }
+};
+
 const sampleSearch = async (con, mainWindow) => {
   try {
     let qry = `select [sampleName],[_id] from sample ORDER BY sampleName ASC`;
@@ -177,7 +221,7 @@ INNER JOIN
     sampleProperty sp ON pm.[pid] = sp.[_id]  
 WHERE 
     pm.[sid] = ${data}
-    ORDER BY propertyName
+    ORDER BY pm.[_id]
     `;
 
     let result = await con.query(qry);
@@ -229,14 +273,10 @@ const addMapping = async (con, mainWindow, data) => {
     //   .map((row) => `(${row.map((value) => `'${value}'`).join(", ")})`)
     //   .join(", ");
 
-    // console.log("query value", queryValues);
-
     let result;
 
     for (const row of data) {
       let qry = `insert into propertyMapping (sid, pid, punit, pprice, isDefault) values (${row.sid}, ${row.pid}, '${row.punit}', ${row.pprice}, ${row.isDefault});`;
-
-      console.log("qry", qry);
 
       result = await con.query(qry);
     }
@@ -264,8 +304,6 @@ const propertyList = async (con, mainWindow) => {
 const deletePredefinedMapping = async (con, mainWindow, data) => {
   try {
     let qry = `delete from propertyMapping where [_id] = ${data._id}`;
-
-    console.log("qry", qry);
 
     let result = await con.query(qry);
 
@@ -298,4 +336,7 @@ module.exports = {
   updateProperty,
   deleteProperty,
   deletePredefinedMapping,
+  addUnit,
+  updateUnit,
+  deleteUnit,
 };

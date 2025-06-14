@@ -93,19 +93,14 @@ const updateTransaction = async (con, mainWindow, data) => {
 
 const deleteDefaultProperty = async (con, mainWindow, data) => {
   try {
-    console.log("data inside try", data);
     const { billNo, transactionId, transactionPropertyId, pid, resultId } =
       data;
 
     let transactionProertyQuery = `DELETE FROM transactionProperties WHERE [_id]=${transactionPropertyId}`;
 
-    console.log("transactionProertyQuery", transactionProertyQuery);
-
     let res = await con.query(transactionProertyQuery);
 
     let propertyResultQuery = `DELETE FROM sampleResults WHERE [_id]=${resultId}`;
-
-    console.log("propertyResultQuery", propertyResultQuery);
 
     let resultRes = await con.query(propertyResultQuery);
 
@@ -120,8 +115,6 @@ const deleteDefaultProperty = async (con, mainWindow, data) => {
 
 const listTransaction = async (con, mainWindow, data) => {
   try {
-    // console.log("date", data);
-
     let updatedData = moment(data).format("MM/DD/YYYY");
     // let updatedData = moment("2025-04-05T11:45:06.606Z").format("MM/DD/YYYY");
 
@@ -159,8 +152,6 @@ const listTransaction = async (con, mainWindow, data) => {
 
     let resultQuery = await con.query(getResults);
 
-    // console.log("search result", JSON.parse(JSON.stringify(resultQuery)));
-
     const groupedData = Object.values(
       testQry.reduce((acc, item) => {
         if (!acc[item.billNo]) {
@@ -193,8 +184,6 @@ const listTransaction = async (con, mainWindow, data) => {
             item.transactionProperyId === ele.transactionPropertyId
           );
         });
-
-        // console.log("result data", resultData);
 
         acc[item.billNo].properties.push({
           pid: item.transactionPropery,
@@ -244,8 +233,6 @@ const listTransaction = async (con, mainWindow, data) => {
     // `;
 
     // let testQry = await con.query(qry);
-
-    //     console.log("test query", JSON.parse(JSON.stringify(testQry)));
 
     //     let getResults = "select * from sampleResults";
 

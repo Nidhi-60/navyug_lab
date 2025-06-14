@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from "react";
 import TextBox from "../common/TextBox";
 import TextArea from "../common/TextArea";
-import Button from "../common/Button";
-import DropDown from "../common/DropDown";
 import { ipcRenderer } from "electron";
 import PartyDetailTable from "../component/PartyDetailTable";
-import { toast } from "react-toastify";
 import CustomModel from "../common/CustomModel";
 import CustomButton from "../common/Button";
 import SearchableDrop from "../common/SearchableDrop";
@@ -13,6 +10,7 @@ import partyDetailValidation from "../validation/partyDetail";
 import { strUpperCase } from "../utils/strUpperCase";
 import ReactPaginate from "react-paginate";
 import usePagination from "../hooks/usePagination";
+import toast from "react-hot-toast";
 
 const PartyMaster = (props) => {
   const { handleCancel } = props;
@@ -99,6 +97,7 @@ const PartyMaster = (props) => {
         ipcRenderer.on("updatePartyDetail:success", (e, data) => {
           refetchData();
           toast.success("Detail Updated Successfully.");
+
           setEditMode(false);
           setPartyDetail({
             companyName: "",
@@ -138,7 +137,7 @@ const PartyMaster = (props) => {
               tdsNo: "",
             });
           } else {
-            toast.warn(parsedData.msg);
+            toast.error(parsedData.msg);
           }
         });
       }
@@ -220,7 +219,7 @@ const PartyMaster = (props) => {
 
     ipcRenderer.on("deletePartyDetail:success", (e, data) => {
       refetchData();
-      toast.warning("Deleted Successfully.");
+      toast.error("Deleted Successfully.");
       setModelShow(!modelShow);
       setDeleteId("");
     });
@@ -230,10 +229,12 @@ const PartyMaster = (props) => {
     {
       label: "Delete",
       action: handleDeleteRecord,
+      className: "btn-primary mr-5",
     },
     {
       label: "Cancel",
       action: handleModel,
+      className: "btn-secondary",
     },
   ];
 
@@ -422,6 +423,7 @@ const PartyMaster = (props) => {
           <CustomButton
             label={editMode ? "Update" : "Save"}
             onClick={handleOnSave}
+            className="btn-primary"
           />
         </div>
 
@@ -454,12 +456,13 @@ const PartyMaster = (props) => {
       <div className="row mt-5">
         <PartyDetailTable
           columns={columns}
-          data={currentItems}
+          // data={currentItems}
+          data={partyList}
           handleEdit={handleEdit}
           handleDelete={handleDelete}
         />
       </div>
-      <div>
+      {/* <div>
         <ReactPaginate
           breakLabel="..."
           nextLabel=">"
@@ -479,7 +482,7 @@ const PartyMaster = (props) => {
           breakLinkClassName="page-link"
           activeClassName="active"
         />
-      </div>
+      </div> */}
     </>
   );
 };

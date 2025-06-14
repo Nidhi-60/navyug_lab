@@ -8,6 +8,7 @@ import moment from "moment";
 import BillShowPrint from "../component/BillShowPrint";
 import { useReactToPrint } from "react-to-print";
 import ComponentToPrint from "../component/ComponentToPrint";
+import PrintBlock from "./PrintBlock";
 
 const BillShow = () => {
   let currentDate = new Date();
@@ -16,7 +17,7 @@ const BillShow = () => {
   const [filterData, setFilterData] = useState({
     partyName: "",
     billNo: "",
-    accountType: "",
+    accountType: { label: "Y", value: "Y" },
     fromDate: prevMonthDate,
     toDate: currentDate,
   });
@@ -24,17 +25,25 @@ const BillShow = () => {
   const [reportData, setReportData] = useState([]);
   const componentRef = useRef(null);
 
-  useEffect(() => {
-    ipcRenderer.send("searchParty:load");
+  // useEffect(() => {
+  //   ipcRenderer.send("searchParty:load");
 
-    ipcRenderer.on("searchParty:success", (e, data) => {
+  //   ipcRenderer.on("searchParty:success", (e, data) => {
+  //     setPartyList(JSON.parse(data));
+  //   });
+  // }, []);
+
+  useEffect(() => {
+    ipcRenderer.send("accountSearchParty:load", filterData?.accountType?.value);
+
+    ipcRenderer.on("accountSearchParty:success", (e, data) => {
       setPartyList(JSON.parse(data));
     });
-  }, []);
+  }, [filterData.accountType.value]);
 
   const accountDrop = [
-    { _id: "no", name: "No" },
-    { _id: "account", name: "Account" },
+    { _id: "N", name: "N" },
+    { _id: "Y", name: "Y" },
   ];
 
   const handleApplyFilter = () => {
@@ -91,16 +100,28 @@ const BillShow = () => {
     onBeforePrint: handleBeforePrint,
   });
 
+  const handleClearReport = () => {
+    setReportData([]);
+    setFilterData({
+      partyName: "",
+      billNo: "",
+      accountType: "",
+      fromDate: prevMonthDate,
+      toDate: currentDate,
+    });
+  };
+
   useEffect(() => {
     if (reportData.length > 0) {
-      handlePrint();
+      // handlePrint();
+      ipcRenderer.send("print", componentRef.current.innerHTML);
     }
   }, [reportData]);
 
   return (
     <div>
-      <div className="row mb-2">
-        <div className="col-6">
+      <div className="row mb-2  d-flex justify-content-center mb-3">
+        <div className="col-6 mr-5">
           <SearchableDrop
             label="Party Name"
             data={partyList}
@@ -109,36 +130,16 @@ const BillShow = () => {
             handleChange={(e) => handleDropChange(e, "partyName")}
           />
         </div>
-        <div className="col-6">
+        <div className="col-6  mr-5">
           <TextBox
             label="Bill No"
             name="billNo"
             value={filterData.billNo}
             onChange={handleTextChange}
+            width="200"
           />
         </div>
-      </div>
-
-      <div className="row mb-2">
-        <div className="col-6">
-          <DateComponent
-            label="From Date"
-            name="fromDate"
-            value={moment(filterData.fromDate).format("YYYY-MM-DD")}
-            onChange={handleTextChange}
-          />
-        </div>
-        <div className="col-6">
-          <DateComponent
-            label="To Date"
-            name="toDate"
-            value={moment(filterData.toDate).format("YYYY-MM-DD")}
-            onChange={handleTextChange}
-          />
-        </div>
-      </div>
-      <div className="row mb-2">
-        <div className="col-6">
+        <div className="col-6  mr-5">
           <SearchableDrop
             label="Account"
             name="accountType"
@@ -148,20 +149,52 @@ const BillShow = () => {
           />
         </div>
       </div>
-      <div className="row text-center">
+
+      <div className="row mb-2 d-flex justify-content-center mb-3">
+        <div className="col-6 mr-5">
+          <DateComponent
+            label="From Date"
+            name="fromDate"
+            value={moment(filterData.fromDate).format("YYYY-MM-DD")}
+            onChange={handleTextChange}
+            width="200"
+          />
+        </div>
+        <div className="col-6">
+          <DateComponent
+            label="To Date"
+            name="toDate"
+            value={moment(filterData.toDate).format("YYYY-MM-DD")}
+            onChange={handleTextChange}
+            width="200"
+          />
+        </div>
+      </div>
+
+      <div className="d-flex justify-content-center">
         <div className="col-12">
-          <CustomButton onClick={handleApplyFilter}>Load Report</CustomButton>
+          <CustomButton
+            onClick={handleApplyFilter}
+            className="btn-primary mr-5"
+          >
+            Load Report
+          </CustomButton>
+          <CustomButton onClick={handleClearReport} className="btn-secondary">
+            Reset
+          </CustomButton>
         </div>
       </div>
 
       {/* {reportData.length > 0 && (
-        <BillShowPrint reportData={reportData} filterData={filterData} />
-      )} */}
-
-      {reportData.length > 0 && (
         <ComponentToPrint ref={componentRef} className="printContent">
           <BillShowPrint reportData={reportData} filterData={filterData} />
         </ComponentToPrint>
+      )} */}
+
+      {reportData.length > 0 && (
+        <PrintBlock componentRef={componentRef}>
+          <BillShowPrint reportData={reportData} filterData={filterData} />
+        </PrintBlock>
       )}
     </div>
   );

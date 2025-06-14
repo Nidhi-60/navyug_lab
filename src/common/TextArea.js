@@ -7,7 +7,7 @@ const TextArea = (props) => {
     <textarea
       name={name}
       onChange={onChange}
-      value={value}
+      value={value || ""}
       className="form-control"
       style={{ width: `${width}px` }}
     />
