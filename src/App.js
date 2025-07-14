@@ -43,8 +43,8 @@ const App = () => {
 
   useEffect(() => {
     if (isAuth) {
-      // setCurrentPage("sampleTransaction");
-      setCurrentPage("billShow");
+      setCurrentPage("sampleTransaction");
+      // setCurrentPage("customReport");
     }
   }, [isAuth]);
 

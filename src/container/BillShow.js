@@ -9,6 +9,8 @@ import BillShowPrint from "../component/BillShowPrint";
 import { useReactToPrint } from "react-to-print";
 import ComponentToPrint from "../component/ComponentToPrint";
 import PrintBlock from "./PrintBlock";
+import ReactSwitch from "react-switch";
+import toast from "react-hot-toast";
 
 const BillShow = () => {
   let currentDate = new Date();
@@ -24,6 +26,7 @@ const BillShow = () => {
   const [partyList, setPartyList] = useState([]);
   const [reportData, setReportData] = useState([]);
   const componentRef = useRef(null);
+  const [switchData, setSwitchData] = useState(false);
 
   // useEffect(() => {
   //   ipcRenderer.send("searchParty:load");
@@ -58,7 +61,13 @@ const BillShow = () => {
     ipcRenderer.send("report:load", updatedFilterData);
 
     ipcRenderer.on("report:success", (e, data) => {
-      setReportData(JSON.parse(data));
+      let parsedData = JSON.parse(data);
+
+      if (parsedData.length > 0) {
+        setReportData(JSON.parse(data));
+      } else {
+        toast.error("No Data Found");
+      }
     });
   };
 
@@ -105,7 +114,7 @@ const BillShow = () => {
     setFilterData({
       partyName: "",
       billNo: "",
-      accountType: "",
+      accountType: { label: "Y", value: "Y" },
       fromDate: prevMonthDate,
       toDate: currentDate,
     });
@@ -117,6 +126,10 @@ const BillShow = () => {
       ipcRenderer.send("print", componentRef.current.innerHTML);
     }
   }, [reportData]);
+
+  const handleSwitchChange = (e) => {
+    setSwitchData(e);
+  };
 
   return (
     <div>
@@ -160,7 +173,7 @@ const BillShow = () => {
             width="200"
           />
         </div>
-        <div className="col-6">
+        <div className="col-6 mr-5">
           <DateComponent
             label="To Date"
             name="toDate"
@@ -168,6 +181,11 @@ const BillShow = () => {
             onChange={handleTextChange}
             width="200"
           />
+        </div>
+
+        <div className="d-flex align-items-center">
+          <label>Is GST : </label>
+          <ReactSwitch onChange={handleSwitchChange} checked={switchData} />
         </div>
       </div>
 
@@ -193,7 +211,11 @@ const BillShow = () => {
 
       {reportData.length > 0 && (
         <PrintBlock componentRef={componentRef}>
-          <BillShowPrint reportData={reportData} filterData={filterData} />
+          <BillShowPrint
+            reportData={reportData}
+            filterData={filterData}
+            switchData={switchData}
+          />
         </PrintBlock>
       )}
     </div>

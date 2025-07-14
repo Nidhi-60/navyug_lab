@@ -28,6 +28,7 @@ const TransactionBillTable = (props) => {
     pageCount,
     handleMultiplePrint,
     printDataCount,
+    handlePdf,
   } = props;
 
   return (
@@ -40,7 +41,7 @@ const TransactionBillTable = (props) => {
           handlePreviousDate={handlePreviousDate}
         />
       </div>
-      <div className="row transaction-table">
+      <div className="row ">
         <table className="table" border={1} width={"100%"}>
           <thead>
             <tr>
@@ -68,8 +69,12 @@ const TransactionBillTable = (props) => {
                       <td rowSpan={ele.properties.length}>
                         <span
                           onClick={(e) => handleEditData(e, ele.transactionId)}
+                          className="mr-5"
                         >
                           <i className={ICONS.EDIT_ICON} />
+                        </span>
+                        <span onClick={(e) => handlePdf(e, ele.transactionId)}>
+                          <i className={ICONS.PDF_ICON} />
                         </span>
                       </td>
                       <td rowSpan={ele.properties.length}>
@@ -123,7 +128,41 @@ const TransactionBillTable = (props) => {
                           : property.result
                       }
                       width="100"
+                      className="transaction-text-box"
                     />
+                    {/* <TextBox
+                      key={propertyIndex}
+                      onChange={(e) =>
+                        handleTestResult(
+                          e,
+                          ele,
+                          property.pid,
+                          property.transactionProperyId
+                        )
+                      }
+                      handleOnBlur={handleSaveResult}
+                      handleOnFocus={(e) =>
+                        handleTextBoxOnFocus(
+                          e,
+                          property.result,
+                          ele.transactionId,
+                          property.pid,
+                          property.resultId,
+                          property.transactionProperyId
+                        )
+                      }
+                      value={
+                        editMode &&
+                        ele.transactionId === current.billId &&
+                        property.pid === current.propertyId &&
+                        property.transactionProperyId ===
+                          current.transactionProperyId
+                          ? result.result
+                          : property.result
+                      }
+                      width="100"
+                      className="transaction-text-box"
+                    /> */}
                   </td>
                   <td>{property.price}</td>
                   <td>{property.remark}</td>

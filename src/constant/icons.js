@@ -5,4 +5,5 @@ export const ICONS = {
   DELETE_ICON: "icon-trash2",
   ADD_ICON: "icon-plus2",
   CANCEL_ICON: "icon-cancel3",
+  PDF_ICON: "icon-file-pdf-o",
 };

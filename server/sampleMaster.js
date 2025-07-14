@@ -27,8 +27,6 @@ const addUnit = async (con, mainWindow, data) => {
 const updateUnit = async (con, mainWindow, data) => {
   const { unitName, _id, uid } = data;
 
-  console.log("data", data);
-
   try {
     let qry = `UPDATE unit SET unitName='${unitName}', _id='${_id}' WHERE uid=${uid}`;
 

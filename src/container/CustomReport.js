@@ -19,11 +19,13 @@ const CustomReport = () => {
     toDate: currentDate,
     sampleName: "",
     partyName: "",
+    testName: "",
     account: { label: "Y", value: "Y" },
   });
   const [sampleOptions, setSampleOptions] = useState([]);
   const [partyList, setPartyList] = useState([]);
   const [reportData, setReportData] = useState([]);
+  const [searchPropertyList, setSearchPropertyList] = useState([]);
   const componentRef = useRef(null);
 
   useEffect(() => {
@@ -41,6 +43,18 @@ const CustomReport = () => {
       setPartyList(JSON.parse(data));
     });
   }, [filterData.account.value]);
+
+  useEffect(() => {
+    refetchProperty();
+  }, []);
+
+  const refetchProperty = () => {
+    ipcRenderer.send("sampleSearchProperty:load");
+
+    ipcRenderer.on("sampleSearchProperty:success", (e, data) => {
+      setSearchPropertyList(JSON.parse(data));
+    });
+  };
 
   const handleAfterPrint = useCallback(() => {
     console.log("`onAfterPrint` called");
@@ -85,6 +99,7 @@ const CustomReport = () => {
       sampleName: filterData.sampleName.value,
       partyName: filterData.partyName.value,
       account: filterData.account.value,
+      testName: filterData.testName.value,
     };
 
     ipcRenderer.send("loadReport:load", updatedFilter);
@@ -143,6 +158,14 @@ const CustomReport = () => {
               data={accountDrop}
               handleChange={(e) => handleDropChange(e, "account")}
               value={filterData.account}
+            />
+          </div>
+          <div className="col-6 mr-5">
+            <SearchableDrop
+              label="Test Name"
+              data={searchPropertyList}
+              value={filterData.testName}
+              handleChange={(e) => handleDropChange(e, "testName")}
             />
           </div>
         </div>

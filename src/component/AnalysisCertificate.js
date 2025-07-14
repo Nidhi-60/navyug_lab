@@ -17,8 +17,23 @@ const AnalysisCertificate = (props) => {
         <div></div>
       </div>
 
-      <div className="">
-        {printData?.properties?.map((ele, index) => {
+      <div className="" style={{ marginTop: "30px" }}>
+        <table width={"100%"}>
+          <tbody>
+            {printData?.properties?.map((ele, index) => {
+              return (
+                <tr key={index}>
+                  <td>{ele.propertyName}</td>
+                  <td>
+                    {ele.result} {ele.punit}
+                  </td>
+                  <td>{ele.remark}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {/* {printData?.properties?.map((ele, index) => {
           return (
             <div key={index} className="d-flex justify-content-around">
               <div>
@@ -31,7 +46,7 @@ const AnalysisCertificate = (props) => {
               </div>
             </div>
           );
-        })}
+        })} */}
       </div>
     </div>
   );

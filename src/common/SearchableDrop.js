@@ -11,6 +11,7 @@ const SearchableDrop = (props) => {
     className,
     width,
     sampleRef,
+    mainClass,
   } = props;
   const [options, setOptions] = useState([]);
 
@@ -82,7 +83,7 @@ const SearchableDrop = (props) => {
   }, [data]);
 
   return (
-    <div>
+    <div className={mainClass && mainClass}>
       {label && <label className="mb-2">{label}</label>}
       <Select
         value={value}

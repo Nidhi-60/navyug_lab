@@ -4,9 +4,13 @@ import React from "react";
 const CustomReportPrint = (props) => {
   const { report } = props;
 
+  let tdStyle = {
+    textAlign: "center",
+  };
+
   return (
     <div className="m-5">
-      <table className="table">
+      <table className="table" width={"100%"}>
         <thead>
           <tr>
             <th>Company Name</th>
@@ -24,14 +28,20 @@ const CustomReportPrint = (props) => {
               <tr key={`${index}-${propertyIndex}`}>
                 {propertyIndex === 0 && (
                   <>
-                    <td rowSpan={ele.properties.length}>{ele?.companyName}</td>
-                    <td rowSpan={ele.properties.length}>{ele?.account}</td>
-                    <td rowSpan={ele.properties.length}>{ele?.sampleName}</td>
+                    <td rowSpan={ele.properties.length} style={tdStyle}>
+                      {ele?.companyName}
+                    </td>
+                    <td rowSpan={ele.properties.length} style={tdStyle}>
+                      {ele?.account}
+                    </td>
+                    <td rowSpan={ele.properties.length} style={tdStyle}>
+                      {ele?.sampleName}
+                    </td>
                   </>
                 )}
-                <td>{property.propertyName}</td>
-                <td>{property.punit}</td>
-                <td>{property.pprice}</td>
+                <td style={tdStyle}>{property.propertyName}</td>
+                <td style={tdStyle}>{property.punit}</td>
+                <td style={tdStyle}>{property.pprice}</td>
 
                 {propertyIndex === 0 && (
                   <td rowSpan={ele.properties.length}>

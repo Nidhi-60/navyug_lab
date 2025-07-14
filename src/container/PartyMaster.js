@@ -163,7 +163,12 @@ const PartyMaster = (props) => {
   ];
 
   const handleSearchOnChange = (e) => {
-    setSearchText(e.target.value);
+    if (e.target.value === "") {
+      handleSearch();
+      setSearchText(e.target.value);
+    } else {
+      setSearchText(e.target.value);
+    }
   };
 
   const handleSearch = () => {
@@ -201,7 +206,7 @@ const PartyMaster = (props) => {
 
     setPartyDetail({
       ...findEditData,
-      account: { label: accountFind.name, value: accountFind._id },
+      account: { label: accountFind?.name, value: accountFind?._id },
     });
   };
 

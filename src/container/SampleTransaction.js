@@ -18,6 +18,8 @@ import { getArrayValue } from "../utils/getArrayvalue";
 import usePagination from "../hooks/usePagination";
 import ReactPaginate from "react-paginate";
 import toast from "react-hot-toast";
+import AnalysisCertificatePDF from "./AnalyticsCertificatePDF";
+import { logo } from "../assests/image";
 
 const SampleTransaction = (props) => {
   const { handleCancel } = props;
@@ -29,6 +31,7 @@ const SampleTransaction = (props) => {
     partyId: "",
     properties: [],
   });
+  let [oldTransaction, setOldTransaction] = useState({});
   const [newTransaction, setNewTransaction] = useState({
     pid: "",
     remark: "",
@@ -62,9 +65,27 @@ const SampleTransaction = (props) => {
   const [editBill, setEditBill] = useState({
     flag: false,
     id: undefined,
+    isSampleChange: false,
+    isdefaultPropertyChange: false,
   });
   const [editNewProperty, setEditNewProperty] = useState([]);
+  const [defaultPropertyEditIndex, setDefaultPropertyEditIndex] = useState([]);
   const sampleRef = useRef(null);
+  const pdfRef = useRef(null);
+  const [pdfData, setPdfData] = useState({});
+  const [logoBase64, setLogoBase64] = useState("");
+
+  useEffect(() => {
+    fetch(logo)
+      .then((res) => res.blob())
+      .then((blob) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setLogoBase64(reader.result); // this is base64 string
+        };
+        reader.readAsDataURL(blob);
+      });
+  }, []);
 
   useEffect(() => {
     fetchBill();
@@ -204,12 +225,16 @@ const SampleTransaction = (props) => {
             };
           });
 
+          let finalProperty = editBill.isSampleChange
+            ? defaultPropertyData
+            : updatedTransaction;
+
           setTransactionData({
             ...transactionData,
-            properties: updatedTransaction,
+            properties: finalProperty,
           });
 
-          let total = transactionData.properties.reduce((acc, curr) => {
+          let total = finalProperty.reduce((acc, curr) => {
             return acc + parseInt(curr.price);
           }, 0);
 
@@ -292,18 +317,24 @@ const SampleTransaction = (props) => {
 
   const handleSearchDropChange = (e, name) => {
     setFormError({ ...formError, [name]: "" });
-    if (name === "sampleName") {
-      setTransactionData({
-        ...transactionData,
-        [name]: e,
-        properties: [],
-      });
-    } else {
-      setTransactionData({
-        ...transactionData,
-        [name]: e,
+    if (name === "sampleId") {
+      setEditBill({
+        ...editBill,
+        isSampleChange: true,
       });
     }
+    // if (name === "sampleId") {
+    //   setTransactionData({
+    //     ...transactionData,
+    //     [name]: e,
+    //     properties: [],
+    //   });
+    // } else {
+    setTransactionData({
+      ...transactionData,
+      [name]: e,
+    });
+    // }
   };
 
   const handleSaveBill = () => {
@@ -329,28 +360,86 @@ const SampleTransaction = (props) => {
       };
 
       if (editBill.flag) {
-        ipcRenderer.send("updateBill:load", {
-          updateSave: {
-            ...updatedObj,
-            transactionId: transactionData.transactionId,
-            createdAt: moment(new Date()).format("YYYY-MM-DD"),
-          },
-          newEdit: editNewProperty.map((ele) => {
-            return { ...ele, pid: ele.pid.value, paid: ele.paid || false };
-          }),
-        });
-        ipcRenderer.on("updateBill:success", (e, data) => {
-          let parsedData = JSON.parse(data);
+        if (editBill.isSampleChange) {
+          let objUpdate = {
+            updateSave: {
+              ...updatedObj,
+              transactionId: transactionData.transactionId,
+              createdAt: moment(new Date()).format("YYYY-MM-DD"),
+            },
+            newEdit: editNewProperty.map((ele) => {
+              return { ...ele, pid: ele.pid.value, paid: ele.paid || false };
+            }),
+            oldDelete: oldTransaction,
+          };
 
-          if (parsedData.success) {
-            toast.success("Bill Updated Successfully.");
-            fetchBill();
-            setTotalPrice(0);
-            fetchMonthBill();
-            setEditNewProperty([]);
-            sampleRef.current.focus();
-          }
-        });
+          ipcRenderer.send("updateBillSampleChange:load", objUpdate);
+
+          ipcRenderer.on("updateBillSampleChange:success", (e, data) => {
+            let parsedData = JSON.parse(data);
+
+            if (parsedData.success) {
+              toast.success("Bill Updated Successfully.");
+              fetchBill();
+              setTotalPrice(0);
+              fetchMonthBill();
+              setEditNewProperty([]);
+              sampleRef.current.focus();
+              setEditBill({
+                ...editBill,
+                flag: false,
+                id: "",
+                isSampleChange: false,
+              });
+            }
+          });
+        } else {
+          let removeProp = oldTransaction.properties.filter((ele, index) => {
+            if (defaultPropertyEditIndex.includes(index)) {
+              return ele;
+            }
+          });
+
+          let addProperty = updatedObj.propertyList.filter((ele, index) => {
+            if (defaultPropertyEditIndex.includes(index)) {
+              return ele;
+            }
+          });
+
+          let obj = {
+            updateSave: {
+              ...updatedObj,
+              transactionId: transactionData.transactionId,
+              createdAt: moment(new Date()).format("YYYY-MM-DD"),
+            },
+            newEdit: editNewProperty.map((ele) => {
+              return { ...ele, pid: ele.pid.value, paid: ele.paid || false };
+            }),
+            isdefaultPropertyChange: editBill.isdefaultPropertyChange,
+            addProperty,
+            removeProp,
+          };
+
+          ipcRenderer.send("updateBill:load", obj);
+          ipcRenderer.on("updateBill:success", (e, data) => {
+            let parsedData = JSON.parse(data);
+
+            if (parsedData.success) {
+              toast.success("Bill Updated Successfully.");
+              fetchBill();
+              setTotalPrice(0);
+              fetchMonthBill();
+              setEditNewProperty([]);
+              sampleRef.current.focus();
+              setEditBill({
+                ...editBill,
+                flag: false,
+                id: "",
+                isSampleChange: false,
+              });
+            }
+          });
+        }
       } else {
         ipcRenderer.send("addBill:load", updatedObj);
         ipcRenderer.on("addBill:success", (e, data) => {
@@ -443,9 +532,17 @@ const SampleTransaction = (props) => {
 
   useEffect(() => {
     if (Object.keys(billPdfData).length > 0) {
-      handlePrint();
+      // handlePrint();
+      ipcRenderer.send("print", componentRef.current.innerHTML, "report");
     }
   }, [billPdfData]);
+
+  useEffect(() => {
+    if (Object.keys(pdfData).length > 0) {
+      // handlePrint();
+      ipcRenderer.send("pdfPrint", pdfRef.current.innerHTML);
+    }
+  }, [pdfData]);
 
   const handlePrint = useReactToPrint({
     contentRef: componentRef,
@@ -470,10 +567,10 @@ const SampleTransaction = (props) => {
         ...result,
         createdAt: moment(new Date()).format("YYYY-MM-DD"),
       });
+      setEditMode(false);
+      setResult({});
       ipcRenderer.on("updateResult:success", (e, data) => {
-        setResult({});
         fetchBill();
-        setEditMode(false);
       });
     } else {
       ipcRenderer.send("saveTestResult:load", {
@@ -481,9 +578,9 @@ const SampleTransaction = (props) => {
         createdAt: moment(new Date()).format("YYYY-MM-DD"),
       });
       ipcRenderer.on("saveTestResult:success", (e, data) => {
+        setEditMode(false);
         setResult({});
         fetchBill();
-        setEditMode(false);
       });
     }
   };
@@ -606,6 +703,15 @@ const SampleTransaction = (props) => {
         });
       }
     } else {
+      setEditBill({
+        ...editBill,
+        isdefaultPropertyChange: true,
+      });
+
+      if (!defaultPropertyEditIndex.includes(index)) {
+        setDefaultPropertyEditIndex([...defaultPropertyEditIndex, index]);
+      }
+
       let p = propertyList.find((ele) => e.value === ele._id);
 
       setTransactionData({
@@ -614,7 +720,7 @@ const SampleTransaction = (props) => {
           if (eleIndex === index) {
             return {
               ...ele,
-              pid: e,
+              pid: { label: e.label, value: p.propertyId },
               price: p.pprice,
               unit: p.punit,
             };
@@ -788,6 +894,7 @@ const SampleTransaction = (props) => {
     };
 
     setTransactionData(updatedObj);
+    setOldTransaction(JSON.parse(JSON.stringify(updatedObj)));
   };
 
   const handleMultiplePrint = (e, data, index) => {
@@ -798,6 +905,12 @@ const SampleTransaction = (props) => {
     }
   };
 
+  const handlePdf = (e, id) => {
+    let findData = billData.find((ele) => ele.transactionId === id);
+
+    setPdfData(findData);
+  };
+
   return (
     <div className="row">
       {Object.keys(billPdfData).length > 0 && (
@@ -806,8 +919,14 @@ const SampleTransaction = (props) => {
         </ComponentToPrint>
       )}
 
+      {Object.keys(pdfData).length > 0 && logoBase64 && (
+        <ComponentToPrint ref={pdfRef} className="printContent">
+          <AnalysisCertificatePDF pdfData={pdfData} logoBase64={logoBase64} />
+        </ComponentToPrint>
+      )}
+
       <div className="d-flex">
-        <div className="col-5 sample-detail">
+        <div className="sample-detail">
           <div className="">
             <div className="row mb-2 d-flex">
               <div className="mr-5">
@@ -837,7 +956,7 @@ const SampleTransaction = (props) => {
                   value={transactionData.sampleId}
                   handleChange={(e) => handleSearchDropChange(e, "sampleId")}
                   formError={formError.sampleId}
-                  width="300"
+                  width="320"
                   sampleRef={sampleRef}
                 />
               </div>
@@ -1078,7 +1197,8 @@ const SampleTransaction = (props) => {
             </div>
           </div>
         </div>
-        <div className="">
+
+        <div className="transaction-table">
           <TransactionBillTable
             dateFilter={dateFilter}
             handleDateChange={handleDateChange}
@@ -1100,6 +1220,7 @@ const SampleTransaction = (props) => {
             pageCount={pageCount}
             handleMultiplePrint={handleMultiplePrint}
             printDataCount={printDataCount}
+            handlePdf={handlePdf}
           />
         </div>
       </div>

@@ -2,7 +2,7 @@ const addResult = async (con, mainWindow, data) => {
   try {
     let { billId, propertyId, result, createdAt } = data;
 
-    let qry = `insert into sampleResults (billId, propertyId, result, createdAt) values 
+    let qry = `insert into sampleResults (billId, propertyId, result, createdAt) values
               ('${billId}', '${propertyId}', '${result}', '${createdAt}')`;
 
     let results = await con.query(qry);

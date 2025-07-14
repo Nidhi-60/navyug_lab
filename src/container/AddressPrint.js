@@ -3,6 +3,7 @@ import SearchableDrop from "../common/SearchableDrop";
 import { ipcRenderer } from "electron";
 import CustomButton from "../common/Button";
 import AddressPrintComponent from "../component/AddressPrintComponent";
+import ComponentToPrint from "../component/ComponentToPrint";
 
 const AddressPrint = () => {
   const [company, setCompany] = useState("");
@@ -33,14 +34,23 @@ const AddressPrint = () => {
 
     ipcRenderer.on("companySearch:success", (e, data) => {
       let addressDetail = JSON.parse(data);
+
       setAddress(addressDetail[0]);
     });
   };
 
+  useEffect(() => {
+    if (Object.keys(address).length > 0) {
+      // handlePrint();
+      ipcRenderer.send("print", componentRef.current.innerHTML);
+      setAddress({});
+    }
+  }, [address]);
+
   return (
     <>
       <div>
-        <div className="row mb-2">
+        <div className="row mb-5">
           <div className="col-6">
             <SearchableDrop
               label="Party Name"
@@ -54,7 +64,10 @@ const AddressPrint = () => {
 
         <div className="row text-center">
           <div className="col-12">
-            <CustomButton onClick={handleApplyFilter}>
+            <CustomButton
+              onClick={handleApplyFilter}
+              className="btn btn-primary"
+            >
               Load Address
             </CustomButton>
           </div>

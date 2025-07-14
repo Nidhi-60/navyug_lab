@@ -172,11 +172,22 @@ const SampleMaster = (props) => {
               label="Select Sample"
               handleChange={handleSamplePropertyChange}
               value={currentSample}
-              width="300"
+              width="450"
+              mainClass="master-drop"
             />
           </div>
-          <div className="">
-            <table className="table mapping-table">
+
+          <div className="" style={{ width: "70%" }}>
+            <table className="table" width={100}>
+              {(propertyList.length > 0 || newProperty.length > 0) && (
+                <thead>
+                  <tr>
+                    {propertyHeader.map((ele, index) => {
+                      return <th key={index}>{ele.label}</th>;
+                    })}
+                  </tr>
+                </thead>
+              )}
               <tbody>
                 {propertyList.map((ele, index) => {
                   return (
@@ -196,7 +207,7 @@ const SampleMaster = (props) => {
                         />
                       </td>
                       <td>
-                        <TextBox value={ele.punit} width="100" readOnly />
+                        <TextBox value={ele.punit} width="300" readOnly />
                       </td>
                       <td>
                         <TextBox value={ele.pprice} width="100" readOnly />
@@ -216,7 +227,7 @@ const SampleMaster = (props) => {
                 })}
               </tbody>
             </table>
-            <table className="table mapping-table">
+            <table className="table">
               <tbody>
                 {newProperty.map((ele, index) => {
                   return (
@@ -232,7 +243,7 @@ const SampleMaster = (props) => {
                         />
                       </td>
                       <td>
-                        <TextBox value={ele.punit.label} width="100" readOnly />
+                        <TextBox value={ele.punit.label} width="300" readOnly />
                       </td>
                       <td>
                         <TextBox value={ele.pprice} width="100" readOnly />
@@ -294,6 +305,7 @@ const SampleMaster = (props) => {
                       value={newEditProperty.pprice}
                       onChange={handleNewPropTextChange}
                       width="100"
+                      className="sample-text"
                     />
                   </td>
                   <td>

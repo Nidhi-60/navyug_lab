@@ -1,6 +1,14 @@
 const path = require("path");
+const fs = require("fs");
 const url = require("url");
-const { app, BrowserWindow, ipcMain, Menu, screen } = require("electron");
+const {
+  app,
+  BrowserWindow,
+  ipcMain,
+  Menu,
+  screen,
+  shell,
+} = require("electron");
 const { connection } = require("./config/dbConnection");
 const {
   list,
@@ -38,6 +46,7 @@ const {
   getMonthBillCount,
   updateTransaction,
   deleteDefaultProperty,
+  updateTransactionOnSample,
 } = require("./server/transaction");
 const { billShow, customReport } = require("./server/reports");
 const { addResult, updateResult } = require("./server/sampleResults");
@@ -82,7 +91,7 @@ function createMainWindow() {
     },
   });
 
-  // mainWindow.maximize();
+  mainWindow.maximize();
 
   let indexPath;
 
@@ -113,17 +122,17 @@ function createMainWindow() {
     mainWindow.show();
 
     // Open devtools if dev
-    // if (isDev) {
-    // const {
-    // 	default: installExtension,
-    // 	REACT_DEVELOPER_TOOLS,
-    // } = require('electron-devtools-installer')
+    if (isDev) {
+      // const {
+      // 	default: installExtension,
+      // 	REACT_DEVELOPER_TOOLS,
+      // } = require('electron-devtools-installer')
 
-    // installExtension(REACT_DEVELOPER_TOOLS).catch((err) =>
-    // 	console.log('Error loading React DevTools: ', err)
-    // )
-    mainWindow.webContents.openDevTools();
-    // }
+      // installExtension(REACT_DEVELOPER_TOOLS).catch((err) =>
+      // 	console.log('Error loading React DevTools: ', err)
+      // )
+      mainWindow.webContents.openDevTools();
+    }
   });
 
   mainWindow.on("close", (e) => {
@@ -132,6 +141,13 @@ function createMainWindow() {
 
   // mainWindow.on("closed", () => (mainWindow = null));
 }
+
+app.commandLine.appendSwitch("enable-features", "WebShare,WebShareFile");
+
+app.commandLine.appendSwitch(
+  "enable-features",
+  "WebShare,WebShareFileAPI" // lets navigator.share accept { files }
+);
 
 const defaultMenu = [];
 
@@ -253,12 +269,12 @@ const template = [
           mainWindow.webContents.send("menu", { LABEL: "customReport" });
         },
       },
-      {
-        label: "Account Report",
-        click: () => {
-          mainWindow.webContents.send("menu", { LABEL: "accountReport" });
-        },
-      },
+      // {
+      //   label: "Account Report",
+      //   click: () => {
+      //     mainWindow.webContents.send("menu", { LABEL: "accountReport" });
+      //   },
+      // },
       {
         label: "Bill Show",
         click: () => {
@@ -386,6 +402,10 @@ ipcMain.on("updateBill:load", async (e, data) =>
   updateTransaction(con, mainWindow, data)
 );
 
+ipcMain.on("updateBillSampleChange:load", async (e, data) =>
+  updateTransactionOnSample(con, mainWindow, data)
+);
+
 ipcMain.on("deleteDefautProperty:load", async (e, data) =>
   deleteDefaultProperty(con, mainWindow, data)
 );
@@ -426,52 +446,7 @@ ipcMain.on("deleteUnit:load", async (e, data) =>
   deleteUnit(con, mainWindow, data)
 );
 
-ipcMain.on("print", (e, htmlContent) => {
-  // const printWindow = new BrowserWindow({
-  //   width: 800,
-  //   height: 600,
-  //   show: true, // hide window initially
-  //   webPreferences: {
-  //     nodeIntegration: false,
-  //     contextIsolation: true,
-  //   },
-  // });
-
-  // printWindow.loadURL(
-  //   "data:text/html;charset=utf-8," +
-  //     encodeURIComponent(`
-  //       <html>
-  //         <head>
-  //           <title>Print</title>
-  //           <style>
-  //             body { font-family: sans-serif; padding: 20px; }
-  //           </style>
-  //         </head>
-  //         <body>
-  //           ${htmlContent}
-  //           <script>
-  //             window.onload = () => {
-  //               window.electronAPI = require('electron');
-  //             };
-  //           </script>
-  //         </body>
-  //       </html>
-  //     `)
-  // );
-
-  // printWindow.webContents.on("did-finish-load", () => {
-  //   printWindow.webContents.print(
-  //     {
-  //       silent: false, // shows print preview
-  //       printBackground: true,
-  //     },
-  //     (success, errorType) => {
-  //       if (!success) console.error("Print failed: ", errorType);
-  //       printWindow.close();
-  //     }
-  //   );
-  // });
-
+ipcMain.on("print", (e, htmlContent, isReport) => {
   const printWindow = new BrowserWindow({
     width: 900,
     height: 700,
@@ -495,21 +470,435 @@ ipcMain.on("print", (e, htmlContent) => {
           h1 {
             margin-bottom: 10px;
           }
+          
+          .d-flex {
+              display: flex;
+          }
+
+          .justify-content-around{
+             justify-content: space-around;
+          }
+
+          table{
+            width:"100%"
+          }
+          
+         
+          button{
+            padding: 1px 5px 1px 5px;
+          }
+
+          .btn-secondary {
+            background-color: #534e4e;
+            color: #fff
+          }
+
+            .btn-primary {
+              background-color: #9e444b;
+              color: #fff;
+            }
+
+          .printContent {
+              display: block;
+          }
+
+          @media print {
+            .printContent {
+                display: none;
+          }
+          }
         </style>
       </head>
       <body>
+      <div class="d-flex">
+      <button id="print" class='printContent btn btn-primary'>Print</button>
+      <button id='close' class="printContent btn btn-secondary">Close</button>
+  
+      </div>
+
         ${htmlContent}
-         <script>
-        window.onload = () => {
-          window.print();
-        };
-        window.onafterprint = () => {
-          window.close();
-        };
-      </script>
+     
       </body>
+
+      <script>
+         let btn = document.getElementById("print")
+         let closeBtn = document.getElementById("close")
+         btn.addEventListener("click", function() {
+          window.print();
+         })
+
+         closeBtn.addEventListener("click", () =>{
+            window.close()
+          }) 
+
+        window.addEventListener('afterprint', () => {
+            window.close();
+          });
+      </script>
     </html>
   `;
+
+  printWindow.loadURL(
+    "data:text/html;charset=utf-8," + encodeURIComponent(fullHtml)
+  );
+});
+
+ipcMain.on("share-certificate", async (event, uint8Array) => {
+  try {
+    const buffer = Buffer.from(uint8Array);
+
+    const tempPath = path.join(app.getPath("temp"), "certificate-shared.pdf");
+
+    fs.writeFileSync(tempPath, buffer);
+
+    // Open with system default app (email, PDF viewer, etc.)
+    await shell.openPath(tempPath);
+  } catch (err) {
+    console.error("Failed to share/open PDF:", err);
+  }
+});
+
+ipcMain.on("pdfPrint", (e, htmlContent) => {
+  const printWindow = new BrowserWindow({
+    width: 900,
+    height: 700,
+    show: true, // must be true to preview
+    webPreferences: {
+      contextIsolation: false,
+      experimentalFeatures: true,
+      nodeIntegration: true,
+    },
+    frame: false,
+    transparent: false,
+  });
+
+  const fullHtml = `
+    <html>
+      <head>
+        <title>Print Preview</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <style>
+              /* ------------------------------------------------------------------ */
+          /*  A4 PRINT SETTINGS                                                 */
+          /* ------------------------------------------------------------------ */
+          @media print {
+            @page { size: A4; margin: 20mm; }
+            html, body {
+            width: 210mm;
+            height: 297mm;
+          }
+          }
+
+
+          /* ------------------------------------------------------------------ */
+          /*  PAGE WRAPPER                                                      */
+          /* ------------------------------------------------------------------ */
+          .cert-page {
+              width: 210mm;
+              min-height: 297mm;
+              padding: 10mm;
+              box-sizing: border-box;
+              overflow: hidden;
+              font-family: Arial, sans-serif;
+          }
+
+            .cert-page * {
+              max-width: 100%;
+              box-sizing: border-box;
+              overflow-wrap: break-word;
+            }
+
+          /* ------------------------------------------------------------------ */
+          /*  LETTER‑HEAD (LAB INFO + LOGO)                                     */
+          /* ------------------------------------------------------------------ */
+          .cert-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            background: #d7dade;               /* light‑grey strip across header */
+            border-bottom: 2px solid #999;
+            padding: 6mm;
+            font-size: 12px;
+          }
+
+          .lab-info > div { margin-bottom: 2px; }
+
+          .logo-block { display: flex; align-items: center; }
+
+          /* optional placeholder circle; remove if you place a real PNG/SVG */
+          .logo-circle {
+            width: 26mm;
+            height: 26mm;
+            border: 3mm solid #d40000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18mm;
+            font-weight: bold;
+            color: #d40000;
+            margin-right: 4mm;
+          }
+
+          .logo-text {
+            text-align: right;
+            line-height: 1.1;
+          }
+
+          .logo-text h2 {
+                  margin: 0;
+                font-size: 45px;
+                letter-spacing: 1px;
+                color: #3c3c3c;
+                font-weight: 500;
+          }
+
+          .logo-text div:nth-child(2) {       /* “ANALYTICAL LABORATORY” */
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.4px;
+          }
+
+          .logo-text div:nth-child(3) {       /* “Since 1983” */
+            font-size: 14px;
+            font-style: normal;
+            margin-top: 1mm;
+            font-weight: 500;
+          }
+
+          /* ------------------------------------------------------------------ */
+          /*  NARROW STRIP (TIMING + SCOPE)                                     */
+          /* ------------------------------------------------------------------ */
+          .strip {
+            font-size: 11px;
+            background: transparent;           /* no fill colour */
+            padding: 2mm 3mm;
+            margin: 4mm 0 8mm;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #999;     /* thin underline for separation */
+          }
+
+          /* ------------------------------------------------------------------ */
+          /*  MAIN TITLE                                                        */
+          /* ------------------------------------------------------------------ */
+          .cert-title {
+            text-align: center;
+            margin: 0;
+            color: #b50000;                    /* deep red */
+            letter-spacing: 0.5px;
+            font-size: 22px;
+            font-weight: 700;
+          }
+          .sub { text-align: center; font-size: 11px; margin: 1mm 0 8mm; }
+
+          /* ------------------------------------------------------------------ */
+          /*  META INFO (REF NO + DATE)                                         */
+          /* ------------------------------------------------------------------ */
+          .meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+          }
+
+          /* ------------------------------------------------------------------ */
+          /*  SECTION 1 : SAMPLE DETAILS                                        */
+          /* ------------------------------------------------------------------ */
+          .sec-heading { margin: 8mm 0 2mm; font-size: 14px; }
+
+          .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+          }
+          .details-table th,
+          .details-table td {
+            border: 1px solid #999;
+            padding: 3mm 2mm;
+            text-align:center
+          }
+
+          /* both header rows share the same grey */
+          .details-table th {
+            background: #d7dade;
+            text-align: center;
+          }
+
+          /* ------------------------------------------------------------------ */
+          /*  SECTION 2 : RESULTS                                               */
+          /* ------------------------------------------------------------------ */
+          .results-head {
+            margin: 8mm 0 2mm;
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+          }
+
+          .results-block {
+            background: #d7dade;               /* pale grey block behind table */
+            padding: 6mm 4mm;
+            min-height: 40mm;                  /* keeps area tall even if few rows */
+          }
+
+          .results-table {
+            width: 100%;
+            border-collapse: collapse;
+          }
+
+          .results-table td {
+            padding: 1.5mm 3mm;
+            font-size: 13px;
+          
+          }
+
+          /* ------------------------------------------------------------------ */
+          /*  SIGNATURE + FOOTER                                                */
+          /* ------------------------------------------------------------------ */
+          .sig-area { margin-top: 5mm; font-size: 12px; }
+
+          .sig-area .blank-line {
+            width: 60mm;
+            height: 0;
+            border-bottom: 1px solid #000;
+            margin: 4mm 0;
+          }
+
+          .auth-sign { margin-top: 5mm; }
+
+          .note { font-size: 11px; margin-top:5mm; }
+
+          /* ------------------------------------------------------------------ */
+          /*  WATERMARK                                                         */
+          /* ------------------------------------------------------------------ */
+          .watermark {
+              position: absolute;
+              bottom: 45mm;
+              right: 14mm;
+              font-size: 121px;
+              font-weight: 700;
+              color: #000;
+              opacity: 0.03;
+              pointer-events: none;
+              user-select: none;
+              transform: rotate(-25deg);
+          }
+
+          .logo-watermark {
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%) rotate(-25deg);
+              opacity: 0.05;
+              width: 70%;
+              max-width: 500px;
+              z-index: 0;
+              pointer-events: none;
+              user-select: none;
+            }
+
+
+        </style>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+      </head>
+      <body>
+            <div class="d-flex">
+            <button id="share" class="btn btn-primary">Share</button>
+            <button id='close' class="printContent btn btn-secondary">Close</button>
+            </div>
+          <div>
+          ${htmlContent}
+          </div>
+      </body>
+      <script>
+          const { ipcRenderer } = require("electron");
+          const generatePDFBlob = async () => {
+                const certContent = document.getElementById("cert-page");
+                return new Promise((resolve, reject) => {
+                  const opt = {
+                    margin: 0,
+                    filename: 'certificate.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    
+                    html2canvas: { scale: 2 },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait',format: [210, 297], }
+                  };
+
+                  html2pdf()
+                    .from(certContent)
+                    .set(opt)
+                    .outputPdf('blob')
+                    .then(resolve)
+                    .catch(reject);
+                }); 
+          };
+
+
+          let closeBtn = document.getElementById("close");
+          const shareButton = document.getElementById("share");
+          let certDoc = document.getElementById("cert-page")
+
+          console.log(certDoc)
+          
+
+          closeBtn.addEventListener("click",  () =>{
+              window.close()
+            })
+
+              //  const blob = new Blob([certDoc], { type: "application/pdf" }); // for download
+              // const file = new File([blob], "certificate.pdf", { type: "application/pdf" });
+
+           
+
+
+            shareButton.addEventListener("click", async () => {
+                    const certContent = document.querySelector(".cert-page");
+                    const blob = await generatePDFBlob();
+                     const file = new File([blob], "certificate.pdf", { type: "application/pdf" });
+
+                if (!certContent) {
+                  alert("No certificate content found.");
+                  return;
+                }
+
+                 const isElectron = navigator.userAgent.toLowerCase().includes("electron");
+
+
+                  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                      await navigator.share({
+                        title: "Certificate",
+                        text: "Sharing the certificate file",
+                        files: [file],
+                      });
+                    } catch (err) {
+                      console.error("Sharing failed:", err);
+                      alert("Sharing failed.");
+                    }
+                  }
+                  // else if (isElectron) {
+                  //   const arrayBuffer = await blob.arrayBuffer();
+                  //   const uint8Array = Array.from(new Uint8Array(arrayBuffer));
+  
+                  //   ipcRenderer.send("share-certificate", uint8Array);
+                  // }  
+                  else {
+                     const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = "certificate.pdf";
+                      a.style.display = "none";
+                      document.body.appendChild(a);
+                      a.click();
+                      URL.revokeObjectURL(url);
+                      a.remove();
+                  }
+        });
+      </script>
+    </html>
+  `;
+
+  printWindow.webContents.openDevTools();
 
   printWindow.loadURL(
     "data:text/html;charset=utf-8," + encodeURIComponent(fullHtml)

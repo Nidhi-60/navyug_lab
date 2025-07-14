@@ -44,7 +44,31 @@ const updateTransaction = async (con, mainWindow, data) => {
       propertyList,
       transactionId,
     } = data.updateSave;
-    let { newEdit } = data;
+    let { newEdit, isdefaultPropertyChange, addProperty, removeProp } = data;
+
+    if (isdefaultPropertyChange) {
+      if (removeProp.length > 0) {
+        for (const row of removeProp) {
+          let qry2 = `DELETE FROM transactionProperties WHERE [_id]=${row.transactionProperyId}`;
+          let result = await con.query(qry2);
+
+          //old transaction result delete
+          let qry3 = `DELETE FROM sampleResults WHERE transactionPropertyId=${row.transactionProperyId}`;
+          let result2 = await con.query(qry3);
+        }
+      }
+      if (addProperty.length > 0) {
+        for (let row of addProperty) {
+          let qry2 = `insert into transactionProperties (billNo, createdAt, sampleId, pid, price, unit, remark, paid) values (${billNo}, #${createdAt}#, ${sampleId}, ${row.pid}, '${row.price}', '${row.unit}', '${row.remark}', ${row.paid})`;
+
+          let result3 = await con.query(qry2);
+          let propertyLastId = await con.query("SELECT @@IDENTITY AS lastId");
+          let transactionResultQry = `insert into sampleResults (billId, propertyId, createdAt, transactionPropertyId) values
+        ('${transactionId}', '${row.pid}', '${createdAt}', '${propertyLastId[0].lastId}')`;
+          let transactionResult = await con.query(transactionResultQry);
+        }
+      }
+    }
 
     // main transaction update
     let qry = `UPDATE sampleTransaction SET
@@ -89,6 +113,75 @@ const updateTransaction = async (con, mainWindow, data) => {
   } catch (e) {
     console.log("e sample transaction error", e);
   }
+};
+
+const updateTransactionOnSample = async (con, mainWindow, data) => {
+  const { updateSave, newEdit, oldDelete } = data;
+  let {
+    billNo,
+    createdAt,
+    sampleId,
+    partyId,
+    locationId,
+    propertyList,
+    transactionId,
+  } = updateSave;
+  let { properties: oldProperties } = oldDelete;
+
+  let qry = `UPDATE sampleTransaction SET
+    sampleId=${sampleId},
+    partyId=${partyId},
+    locationId=${locationId},
+    paid=${propertyList[0].paid} WHERE [_id]=${transactionId}`;
+
+  let result = await con.query(qry);
+
+  //  old transaction properties delete
+  for (const row of oldProperties) {
+    let qry2 = `DELETE FROM transactionProperties WHERE [_id]=${row.transactionProperyId}`;
+    let result = await con.query(qry2);
+
+    //old transaction result delete
+    let qry3 = `DELETE FROM sampleResults WHERE transactionPropertyId=${row.transactionProperyId}`;
+    let result2 = await con.query(qry3);
+  }
+
+  // add new transaction properties
+  if (newEdit.length > 0) {
+    for (let row of newEdit) {
+      try {
+        let qry2 = `insert into transactionProperties (billNo, createdAt, sampleId, pid, price, unit, remark, paid) values (${billNo}, #${createdAt}#, ${sampleId}, ${row.pid}, '${row.price}', '${row.unit}', '${row.remark}', ${row.paid})`;
+
+        let result3 = await con.query(qry2);
+        let propertyLastId = await con.query("SELECT @@IDENTITY AS lastId");
+        let transactionResultQry = `insert into sampleResults (billId, propertyId, createdAt, transactionPropertyId) values
+          ('${transactionId}', '${row.pid}', '${createdAt}', '${propertyLastId[0].lastId}')`;
+        let transactionResult = await con.query(transactionResultQry);
+      } catch (e) {
+        console.log(e);
+      }
+    }
+  }
+
+  if (propertyList.length > 0) {
+    for (let row of propertyList) {
+      try {
+        let qry2 = `insert into transactionProperties (billNo, createdAt, sampleId, pid, price, unit, remark, paid) values (${billNo}, #${createdAt}#, ${sampleId}, ${row.pid}, '${row.price}', '${row.unit}', '${row.remark}', ${row.paid})`;
+        let result3 = await con.query(qry2);
+        let propertyLastId = await con.query("SELECT @@IDENTITY AS lastId");
+        let transactionResultQry = `insert into sampleResults (billId, propertyId, createdAt, transactionPropertyId) values
+            ('${transactionId}', '${row.pid}', '${createdAt}', '${propertyLastId[0].lastId}')`;
+        let transactionResult = await con.query(transactionResultQry);
+      } catch (e) {
+        console.log(e);
+      }
+    }
+  }
+
+  mainWindow.webContents.send(
+    "updateBillSampleChange:success",
+    JSON.stringify({ success: true })
+  );
 };
 
 const deleteDefaultProperty = async (con, mainWindow, data) => {
@@ -327,4 +420,5 @@ module.exports = {
   getMonthBillCount,
   updateTransaction,
   deleteDefaultProperty,
+  updateTransactionOnSample,
 };

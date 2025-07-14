@@ -49,6 +49,8 @@ WHERE
     t.[createdAt] BETWEEN #${fromDateUpdated}# AND #${toDateUpdated}# AND ${setClause}
 `;
 
+    console.log("qry", qry);
+
     let testQry = await con.query(qry);
 
     const groupedObject = {};
@@ -147,6 +149,8 @@ WHERE
     //   return acc;
     // }, []);
 
+    console.log("JSON.stringify(mergedData)", JSON.stringify(mergedData));
+
     mainWindow.webContents.send("report:success", JSON.stringify(mergedData));
   } catch (e) {
     console.log(e);
@@ -155,12 +159,13 @@ WHERE
 
 const customReport = async (con, mainWindow, data) => {
   try {
-    const { fromDate, toDate, partyName, account, sampleName } = data;
+    const { fromDate, toDate, partyName, account, sampleName, testName } = data;
 
     let updatedObj = {
       "t.partyId": partyName,
       "p.account": account ? `'${account}'` : undefined,
       "t.sampleId": sampleName,
+      "tp.pid": testName,
     };
 
     let setClauses = [];

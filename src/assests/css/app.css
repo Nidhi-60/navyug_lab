@@ -21,6 +21,10 @@
   justify-content: center;
 }
 
+.justify-content-around{
+  justify-content: space-around;
+}
+
 .align-items-center {
   align-items: center;
 }
@@ -125,6 +129,12 @@ button {
 
 .mapping-box {
   width: 30%;
+  margin-right: 10px;
+}
+
+table{
+  border-spacing: 0;
+  border-color: #8080805c;
 }
 
 td,
@@ -136,7 +146,10 @@ th {
 .transaction-table td,
 .transaction-table th {
   font-size: 10px;
-  padding: 0px;
+  padding-left: 1px;
+  padding-right: 1px;
+
+  /* border:none */
 }
 
 .sample-detail {
@@ -144,7 +157,7 @@ th {
 }
 
 .transaction-table {
-  width: 100%;
+  width: 65%;
 }
 
 .pagination {
@@ -173,6 +186,10 @@ th {
   border-color: #9e444b;
 }
 
+button{
+  padding: 1px 5px 1px 5px;
+}
+
 .btn-secondary {
   background-color: #534e4e;
   color: #fff
@@ -181,6 +198,10 @@ th {
 .btn-primary {
   background-color: #9e444b;
   color: #fff;
+}
+
+.transaction-text-box{
+  padding: 1px 1px 1px 1px !important;
 }
 
 dialog {
@@ -210,6 +231,17 @@ dialog p{
     opacity: 0.3;
 }
 
+.master-drop{
+  margin-top: 3px;
+}
+
+.sample-text{
+  height: 20px;
+  border-radius: 0px !important;
+}
+
+
+
 
 
 
@@ -237,3 +269,128 @@ dialog p{
   margin: auto;
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
 }
+
+
+ @page { size: A4 portrait; margin: 0; }
+    @media print {
+      body { -webkit-print-color-adjust: exact; }
+      .coa-no-print { display: none !important; }
+    }
+
+    :root {
+      --coa-grey: #e6e6e6;
+      --coa-dark: #444;
+      --coa-brand-red: #c60000;
+      --coa-brand-grey: #888;
+      --coa-page-w: 210mm;
+      --coa-page-h: 297mm;
+    }
+
+    .coa-body {
+      width: var(--coa-page-w);
+      height: var(--coa-page-h);
+      margin: 0;
+      font-family: "Times New Roman", serif;
+      color: var(--coa-dark);
+    }
+
+    .coa-sheet {
+      position: relative;
+      box-sizing: border-box;
+      width: 100%;
+      height: 100%;
+      padding: 12mm 14mm 16mm;
+    }
+
+    .coa-watermark {
+      position: absolute;
+      right: 12mm;
+      bottom: 25mm;
+      width: 70mm;
+      opacity: 0.06;
+    }
+
+    .coa-topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      font-size: 10pt;
+    }
+    .coa-lab-contact {
+      line-height: 1.25;
+      max-width: 110mm;
+    }
+    .coa-lab-contact strong { font-size: 11pt; }
+    .coa-logo { width: 38mm; height: auto; }
+
+    .coa-title {
+      margin: 18mm 0 2mm;
+      text-align: center;
+      color: var(--coa-brand-red);
+      font-size: 20pt;
+      letter-spacing: .5pt;
+    }
+    .coa-subtitle {
+      text-align: center;
+      font-size: 9pt;
+      margin-bottom: 6mm;
+    }
+
+    .coa-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10pt;
+      margin-bottom: 6mm;
+    }
+    .coa-meta span { min-width: 60mm; }
+
+    .coa-section { font-weight: 700; margin: 2mm 0 2mm; }
+
+    .coa-sample-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10pt;
+      margin-bottom: 10mm;
+    }
+    .coa-sample-table th {
+      background: var(--coa-grey);
+      text-align: left;
+      padding: 2.5mm 3mm;
+      border: 0.1mm solid var(--coa-brand-grey);
+    }
+    .coa-sample-table td {
+      padding: 2.5mm 3mm;
+      border: 0.1mm solid var(--coa-brand-grey);
+    }
+
+    .coa-results-box {
+      border: 0.1mm solid var(--coa-brand-grey);
+      min-height: 55mm;
+      padding: 6mm 4mm;
+      margin-bottom: 12mm;
+    }
+    .coa-results-box table { width: 100%; font-size: 11pt; }
+    .coa-results-box td { padding: 1mm 0; }
+
+    .coa-analyst { margin-bottom: 12mm; font-size: 11pt; }
+    .coa-signature {
+      width: 38mm;
+      height: 20mm;
+      border-bottom: 0.2mm solid var(--coa-dark);
+      margin-top: 4mm;
+    }
+
+    .coa-disclaimer {
+      position: absolute;
+      bottom: 14mm;
+      left: 14mm;
+      right: 14mm;
+      font-size: 8pt;
+      text-align: justify;
+    }
+
+    .coa-print-btn {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+    }

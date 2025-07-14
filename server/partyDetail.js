@@ -165,7 +165,6 @@ const searchParty = async (con, mainWindow) => {
 
 const accountSearchParty = async (con, mainWindow, data) => {
   try {
-    console.log(data);
     let qry = `select [companyName],[_id],[account] from partyDetail WHERE [account]='${data}' ORDER BY companyName ASC`;
 
     let result = await con.query(qry);
@@ -181,9 +180,11 @@ const accountSearchParty = async (con, mainWindow, data) => {
 
 const getPartyAddress = async (con, mainWindow, data) => {
   try {
-    let qry = `select [address] from partyDetail WHERE [_id] = ${data}`;
+    let qry = `select [address],[companyName] from partyDetail WHERE [_id] = ${data}`;
 
     let result = await con.query(qry);
+
+    console.log(" JSON.stringify(result)", JSON.stringify(result));
 
     mainWindow.webContents.send(
       "companySearch:success",
