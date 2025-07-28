@@ -31,7 +31,7 @@ const CustomReport = () => {
   useEffect(() => {
     ipcRenderer.send("sampleSearch:load");
 
-    ipcRenderer.on("sampleSearch:success", (e, data) => {
+    ipcRenderer.once("sampleSearch:success", (e, data) => {
       setSampleOptions(JSON.parse(data));
     });
   }, []);
@@ -39,7 +39,7 @@ const CustomReport = () => {
   useEffect(() => {
     ipcRenderer.send("accountSearchParty:load", filterData?.account?.value);
 
-    ipcRenderer.on("accountSearchParty:success", (e, data) => {
+    ipcRenderer.once("accountSearchParty:success", (e, data) => {
       setPartyList(JSON.parse(data));
     });
   }, [filterData.account.value]);
@@ -51,7 +51,7 @@ const CustomReport = () => {
   const refetchProperty = () => {
     ipcRenderer.send("sampleSearchProperty:load");
 
-    ipcRenderer.on("sampleSearchProperty:success", (e, data) => {
+    ipcRenderer.once("sampleSearchProperty:success", (e, data) => {
       setSearchPropertyList(JSON.parse(data));
     });
   };
@@ -104,7 +104,7 @@ const CustomReport = () => {
 
     ipcRenderer.send("loadReport:load", updatedFilter);
 
-    ipcRenderer.on("loadReport:success", (e, data) => {
+    ipcRenderer.once("loadReport:success", (e, data) => {
       let res = JSON.parse(data);
       setFilterData({
         fromDate: prevMonthDate,

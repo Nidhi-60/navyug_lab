@@ -39,7 +39,7 @@ const Properties = (props) => {
     if (!isedit.flag) {
       ipcRenderer.send("addProperty:load", formatedData);
 
-      ipcRenderer.on("addProperty:success", (e, data) => {
+      ipcRenderer.once("addProperty:success", (e, data) => {
         let parsedData = JSON.parse(data);
 
         if (parsedData.success) {
@@ -62,7 +62,7 @@ const Properties = (props) => {
     } else {
       ipcRenderer.send("updateProperty:load", formatedData);
 
-      ipcRenderer.on("updateProperty:success", (e, data) => {
+      ipcRenderer.once("updateProperty:success", (e, data) => {
         toast.success("Property Updated Successfully.");
       });
 
@@ -86,7 +86,7 @@ const Properties = (props) => {
   const refetchProperty = () => {
     ipcRenderer.send("propertyList:load");
 
-    ipcRenderer.on("propertyList:success", (e, data) => {
+    ipcRenderer.once("propertyList:success", (e, data) => {
       setPropertyList(JSON.parse(data));
     });
   };
@@ -108,7 +108,7 @@ const Properties = (props) => {
 
   const handleDelete = (id) => {
     ipcRenderer.send("deleteProperty:load", { _id: id });
-    ipcRenderer.on("deleteProperty:success", (e, data) => {
+    ipcRenderer.once("deleteProperty:success", (e, data) => {
       toast.success("Property Deleted Successfully.");
       refetchProperty();
     });

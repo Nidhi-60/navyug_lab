@@ -43,7 +43,7 @@ const PartyMaster = (props) => {
   useEffect(() => {
     ipcRenderer.send("partyDetail:load", search, searchText);
 
-    ipcRenderer.on("partyDetail:success", (e, data) => {
+    ipcRenderer.once("partyDetail:success", (e, data) => {
       setPartyList(JSON.parse(data));
     });
   }, [search]);
@@ -51,7 +51,7 @@ const PartyMaster = (props) => {
   const refetchData = () => {
     ipcRenderer.send("partyDetail:load", search, searchText);
 
-    ipcRenderer.on("partyDetail:success", (e, data) => {
+    ipcRenderer.once("partyDetail:success", (e, data) => {
       setPartyList(JSON.parse(data));
     });
   };
@@ -94,7 +94,7 @@ const PartyMaster = (props) => {
       if (editMode) {
         ipcRenderer.send("updatePartyDetail:load", formatePartyDetail);
 
-        ipcRenderer.on("updatePartyDetail:success", (e, data) => {
+        ipcRenderer.once("updatePartyDetail:success", (e, data) => {
           refetchData();
           toast.success("Detail Updated Successfully.");
 
@@ -117,7 +117,7 @@ const PartyMaster = (props) => {
       } else {
         ipcRenderer.send("addPartyDetail:load", formatePartyDetail);
 
-        ipcRenderer.on("addPartyDetail:success", (e, data) => {
+        ipcRenderer.once("addPartyDetail:success", (e, data) => {
           let parsedData = JSON.parse(data);
           if (parsedData.success) {
             toast.success("Detail added Successfully.");
@@ -222,7 +222,7 @@ const PartyMaster = (props) => {
   const handleDeleteRecord = () => {
     ipcRenderer.send("deleteParyDetail:load", deleteId);
 
-    ipcRenderer.on("deletePartyDetail:success", (e, data) => {
+    ipcRenderer.once("deletePartyDetail:success", (e, data) => {
       refetchData();
       toast.error("Deleted Successfully.");
       setModelShow(!modelShow);

@@ -98,25 +98,40 @@ const SampleTransaction = (props) => {
     }
   }, [transactionData.date]);
 
+  // const fetchBill = () => {
+  //   ipcRenderer.send("transactionList:load", dateFilter);
+
+  //   ipcRenderer.once("transactionList:success", (e, data) => {
+  //     let parsedData = JSON.parse(data);
+
+  //     const updatedData = mergeProperties(parsedData);
+
+  //     setBillData(JSON.parse(data));
+  //   });
+  // };
+
   const fetchBill = () => {
     ipcRenderer.send("transactionList:load", dateFilter);
 
-    ipcRenderer.on("transactionList:success", (e, data) => {
+    ipcRenderer.once("transactionList:success", (e, data) => {
       let parsedData = JSON.parse(data);
 
-      const updatedData = mergeProperties(parsedData);
+      // const updatedData = mergeProperties(parsedData);
 
-      setBillData(JSON.parse(data));
+      setBillData(parsedData); // You were parsing data but not using merged result
     });
   };
 
   function mergeProperties(data) {
     data.forEach((bill) => {
       const mergedProperties = {};
+      console.log("bill", bill);
 
       // Loop through each property in the bill
       bill.properties.forEach((property) => {
         const key = `${property.pid}-${property.propertyName}`;
+
+        console.log("key", key);
 
         // If the property has already been processed, merge the prices
         if (mergedProperties[key]) {
@@ -139,15 +154,45 @@ const SampleTransaction = (props) => {
     return data;
   }
 
+  // const fetchMonthBill = () => {
+  //   ipcRenderer.send("billCount:load", transactionData.date);
+  //   ipcRenderer.once("billCount:success", (e, data) => {
+  //     let res = JSON.parse(data);
+  //     ipcRenderer.send("location:load");
+  //     ipcRenderer.once("location:success", async (e, data) => {
+  //       let locationsData = JSON.parse(data);
+  //       setLocation(locationsData);
+  //       let findLocation = locationsData.find((ele) => ele.isDefault);
+  //       setTransactionData({
+  //         ...transactionData,
+  //         date: moment(transactionData.date).format("YYYY-MM-DD"),
+  //         sampleId: "",
+  //         locationId: {
+  //           label: findLocation.location,
+  //           value: findLocation._id,
+  //         },
+  //         partyId: "",
+  //         properties: [],
+  //         billNo: parseInt(res.total_records) + 1,
+  //       });
+  //     });
+  //   });
+  // };
+
   const fetchMonthBill = () => {
     ipcRenderer.send("billCount:load", transactionData.date);
-    ipcRenderer.on("billCount:success", (e, data) => {
+
+    ipcRenderer.once("billCount:success", (e, data) => {
       let res = JSON.parse(data);
+
       ipcRenderer.send("location:load");
-      ipcRenderer.on("location:success", async (e, data) => {
+
+      ipcRenderer.once("location:success", async (e, data) => {
         let locationsData = JSON.parse(data);
         setLocation(locationsData);
+
         let findLocation = locationsData.find((ele) => ele.isDefault);
+
         setTransactionData({
           ...transactionData,
           date: moment(transactionData.date).format("YYYY-MM-DD"),
@@ -167,7 +212,7 @@ const SampleTransaction = (props) => {
   useEffect(() => {
     ipcRenderer.send("sampleSearch:load");
 
-    ipcRenderer.on("sampleSearch:success", (e, data) => {
+    ipcRenderer.once("sampleSearch:success", (e, data) => {
       setSampleList(JSON.parse(data));
     });
   }, []);
@@ -175,11 +220,77 @@ const SampleTransaction = (props) => {
   useEffect(() => {
     ipcRenderer.send("searchParty:load");
 
-    ipcRenderer.on("searchParty:success", (e, data) => {
+    ipcRenderer.once("searchParty:success", (e, data) => {
       setPartyList(JSON.parse(data));
     });
   }, []);
 
+  // useEffect(() => {
+  //   if (transactionData?.sampleId?.value) {
+  //     ipcRenderer.send(
+  //       "getSampleProperty:load",
+  //       transactionData.sampleId.value
+  //     );
+
+  //     ipcRenderer.once("getSampleProperty:success", (e, data) => {
+  //       let parsedData = JSON.parse(data);
+
+  //       console.log("parsed data", parsedData);
+
+  //       setPropertyList([{ _id: "", name: "select.." }, ...parsedData]);
+
+  //       let defaultProperty = parsedData.filter((ele) => ele.isDefault);
+
+  //       let defaultPropertyData = defaultProperty.map((ele) => {
+  //         return {
+  //           account: "",
+  //           pid: { label: ele.propertyName, value: ele.propertyId },
+  //           remark: "",
+  //           unit: ele.punit,
+  //           paid: false,
+  //           price: ele.pprice,
+  //         };
+  //       });
+
+  //       if (!editBill.flag) {
+  //         setTransactionData({
+  //           ...transactionData,
+  //           properties: defaultPropertyData,
+  //         });
+
+  //         let total = defaultPropertyData.reduce((acc, curr) => {
+  //           return acc + parseInt(curr.price);
+  //         }, 0);
+
+  //         setTotalPrice(total);
+  //       } else {
+  //         let updatedTransaction = transactionData.properties.map((ele) => {
+  //           return {
+  //             ...ele,
+  //             isDefault: true,
+  //             pid: { label: ele.propertyName, value: ele.pid },
+  //           };
+  //         });
+
+  //         let finalProperty = editBill.isSampleChange
+  //           ? defaultPropertyData
+  //           : updatedTransaction;
+
+  //         setTransactionData({
+  //           ...transactionData,
+  //           properties: finalProperty,
+  //         });
+
+  //         let total = finalProperty.reduce((acc, curr) => {
+  //           return acc + parseInt(curr.price);
+  //         }, 0);
+
+  //         setTotalPrice(total);
+  //       }
+  //     });
+
+  //   }
+  // }, [transactionData.sampleId.value]);
   useEffect(() => {
     if (transactionData?.sampleId?.value) {
       ipcRenderer.send(
@@ -187,8 +298,16 @@ const SampleTransaction = (props) => {
         transactionData.sampleId.value
       );
 
-      ipcRenderer.on("getSampleProperty:success", (e, data) => {
+      const handleSuccess = (e, data) => {
         let parsedData = JSON.parse(data);
+        setNewTransaction({
+          pid: "",
+          remark: "",
+          price: "",
+          paid: false,
+        });
+
+        console.log("parsed data", parsedData);
 
         setPropertyList([{ _id: "", name: "select.." }, ...parsedData]);
 
@@ -240,7 +359,13 @@ const SampleTransaction = (props) => {
 
           setTotalPrice(total);
         }
-      });
+      };
+
+      ipcRenderer.once("getSampleProperty:success", handleSuccess);
+
+      return () => {
+        ipcRenderer.removeListener("getSampleProperty:success", handleSuccess);
+      };
     }
   }, [transactionData.sampleId.value]);
 
@@ -337,121 +462,271 @@ const SampleTransaction = (props) => {
     // }
   };
 
+  // const handleSaveBill = () => {
+  //   const { formError, formValid } = transactionValidation(transactionData);
+
+  //   if (formValid) {
+  //     let updatedObj = {
+  //       billNo: transactionData.billNo,
+  //       createdAt: transactionData.date,
+  //       sampleId: transactionData.sampleId.value,
+  //       partyId: transactionData.partyId.value,
+  //       locationId: transactionData.locationId.value,
+  //       propertyList: transactionData.properties.map((ele) => {
+  //         return {
+  //           pid: ele.pid.value,
+  //           price: ele.price,
+  //           remark: ele.remark,
+  //           unit: ele.unit,
+  //           paid: ele.paid || false,
+  //           transactionProperyId: ele.transactionProperyId,
+  //         };
+  //       }), // propertyList,
+  //     };
+
+  //     if (editBill.flag) {
+  //       if (editBill.isSampleChange) {
+  //         let objUpdate = {
+  //           updateSave: {
+  //             ...updatedObj,
+  //             transactionId: transactionData.transactionId,
+  //             createdAt: moment(new Date()).format("YYYY-MM-DD"),
+  //           },
+  //           newEdit: editNewProperty.map((ele) => {
+  //             return { ...ele, pid: ele.pid.value, paid: ele.paid || false };
+  //           }),
+  //           oldDelete: oldTransaction,
+  //         };
+
+  //         ipcRenderer.send("updateBillSampleChange:load", objUpdate);
+
+  //         ipcRenderer.once("updateBillSampleChange:success", (e, data) => {
+  //           let parsedData = JSON.parse(data);
+
+  //           if (parsedData.success) {
+  //             toast.success("Bill Updated Successfully.");
+  //             fetchBill();
+  //             setTotalPrice(0);
+  //             fetchMonthBill();
+  //             setEditNewProperty([]);
+  //             sampleRef.current.focus();
+  //             setEditBill({
+  //               ...editBill,
+  //               flag: false,
+  //               id: "",
+  //               isSampleChange: false,
+  //             });
+  //             setNewTransaction({
+  //               pid: "",
+  //               remark: "",
+  //               price: "",
+  //               paid: false,
+  //             });
+  //           }
+  //         });
+  //       } else {
+  //         let removeProp = oldTransaction.properties.filter((ele, index) => {
+  //           if (defaultPropertyEditIndex.includes(index)) {
+  //             return ele;
+  //           }
+  //         });
+
+  //         let addProperty = updatedObj.propertyList.filter((ele, index) => {
+  //           if (defaultPropertyEditIndex.includes(index)) {
+  //             return ele;
+  //           }
+  //         });
+
+  //         let obj = {
+  //           updateSave: {
+  //             ...updatedObj,
+  //             transactionId: transactionData.transactionId,
+  //             createdAt: moment(new Date()).format("YYYY-MM-DD"),
+  //           },
+  //           newEdit: editNewProperty.map((ele) => {
+  //             return { ...ele, pid: ele.pid.value, paid: ele.paid || false };
+  //           }),
+  //           isdefaultPropertyChange: editBill.isdefaultPropertyChange,
+  //           addProperty,
+  //           removeProp,
+  //         };
+
+  //         ipcRenderer.send("updateBill:load", obj);
+  //         ipcRenderer.once("updateBill:success", (e, data) => {
+  //           let parsedData = JSON.parse(data);
+
+  //           if (parsedData.success) {
+  //             toast.success("Bill Updated Successfully.");
+  //             fetchBill();
+  //             setTotalPrice(0);
+  //             fetchMonthBill();
+  //             setEditNewProperty([]);
+  //             sampleRef.current.focus();
+  //             setEditBill({
+  //               ...editBill,
+  //               flag: false,
+  //               id: "",
+  //               isSampleChange: false,
+  //             });
+  //             setNewTransaction({
+  //               pid: "",
+  //               remark: "",
+  //               price: "",
+  //               paid: false,
+  //             });
+  //           }
+  //         });
+  //       }
+  //     } else {
+  //       ipcRenderer.send("addBill:load", updatedObj);
+  //       ipcRenderer.once("addBill:success", (e, data) => {
+  //         toast.success("Bill Added Successfully.");
+  //         fetchBill();
+  //         setTotalPrice(0);
+  //         fetchMonthBill();
+  //         setEditNewProperty([]);
+  //         setNewTransaction({ pid: "", remark: "", price: "", paid: false });
+  //         sampleRef.current.focus();
+  //       });
+  //     }
+  //   } else {
+  //     setFormError(formError);
+  //   }
+  // };
+
   const handleSaveBill = () => {
-    const { formError, formValid } = transactionValidation(transactionData);
+    if (newTransaction.pid !== "") {
+      setFormError({
+        addBtn: "There is unadded property please click on + to add property",
+      });
+    } else {
+      const { formError, formValid } = transactionValidation(transactionData);
 
-    if (formValid) {
-      let updatedObj = {
-        billNo: transactionData.billNo,
-        createdAt: transactionData.date,
-        sampleId: transactionData.sampleId.value,
-        partyId: transactionData.partyId.value,
-        locationId: transactionData.locationId.value,
-        propertyList: transactionData.properties.map((ele) => {
-          return {
-            pid: ele.pid.value,
-            price: ele.price,
-            remark: ele.remark,
-            unit: ele.unit,
-            paid: ele.paid || false,
-            transactionProperyId: ele.transactionProperyId,
-          };
-        }), // propertyList,
-      };
+      if (formValid) {
+        let updatedObj = {
+          billNo: transactionData.billNo,
+          createdAt: transactionData.date,
+          sampleId: transactionData.sampleId.value,
+          partyId: transactionData.partyId.value,
+          locationId: transactionData.locationId.value,
+          propertyList: transactionData.properties.map((ele) => {
+            return {
+              pid: ele.pid.value,
+              price: ele.price,
+              remark: ele.remark,
+              unit: ele.unit,
+              paid: ele.paid || false,
+              transactionProperyId: ele.transactionProperyId,
+            };
+          }),
+        };
 
-      if (editBill.flag) {
-        if (editBill.isSampleChange) {
-          let objUpdate = {
-            updateSave: {
-              ...updatedObj,
-              transactionId: transactionData.transactionId,
-              createdAt: moment(new Date()).format("YYYY-MM-DD"),
-            },
-            newEdit: editNewProperty.map((ele) => {
-              return { ...ele, pid: ele.pid.value, paid: ele.paid || false };
-            }),
-            oldDelete: oldTransaction,
-          };
+        if (editBill.flag) {
+          if (editBill.isSampleChange) {
+            let objUpdate = {
+              updateSave: {
+                ...updatedObj,
+                transactionId: transactionData.transactionId,
+                createdAt: moment(new Date()).format("YYYY-MM-DD"),
+              },
+              newEdit: editNewProperty.map((ele) => {
+                return { ...ele, pid: ele.pid.value, paid: ele.paid || false };
+              }),
+              oldDelete: oldTransaction,
+            };
 
-          ipcRenderer.send("updateBillSampleChange:load", objUpdate);
+            ipcRenderer.send("updateBillSampleChange:load", objUpdate);
 
-          ipcRenderer.on("updateBillSampleChange:success", (e, data) => {
-            let parsedData = JSON.parse(data);
+            ipcRenderer.once("updateBillSampleChange:success", (e, data) => {
+              let parsedData = JSON.parse(data);
 
-            if (parsedData.success) {
-              toast.success("Bill Updated Successfully.");
-              fetchBill();
-              setTotalPrice(0);
-              fetchMonthBill();
-              setEditNewProperty([]);
-              sampleRef.current.focus();
-              setEditBill({
-                ...editBill,
-                flag: false,
-                id: "",
-                isSampleChange: false,
-              });
-            }
-          });
+              if (parsedData.success) {
+                toast.success("Bill Updated Successfully.");
+                fetchBill();
+                setTotalPrice(0);
+                fetchMonthBill();
+                setEditNewProperty([]);
+                sampleRef.current.focus();
+                setEditBill({
+                  ...editBill,
+                  flag: false,
+                  id: "",
+                  isSampleChange: false,
+                });
+                setNewTransaction({
+                  pid: "",
+                  remark: "",
+                  price: "",
+                  paid: false,
+                });
+              }
+            });
+          } else {
+            let removeProp = oldTransaction.properties.filter((ele, index) => {
+              return defaultPropertyEditIndex.includes(index);
+            });
+
+            let addProperty = updatedObj.propertyList.filter((ele, index) => {
+              return defaultPropertyEditIndex.includes(index);
+            });
+
+            let obj = {
+              updateSave: {
+                ...updatedObj,
+                transactionId: transactionData.transactionId,
+                createdAt: moment(new Date()).format("YYYY-MM-DD"),
+              },
+              newEdit: editNewProperty.map((ele) => {
+                return { ...ele, pid: ele.pid.value, paid: ele.paid || false };
+              }),
+              isdefaultPropertyChange: editBill.isdefaultPropertyChange,
+              addProperty,
+              removeProp,
+            };
+
+            ipcRenderer.send("updateBill:load", obj);
+
+            ipcRenderer.once("updateBill:success", (e, data) => {
+              let parsedData = JSON.parse(data);
+
+              if (parsedData.success) {
+                toast.success("Bill Updated Successfully.");
+                fetchBill();
+                setTotalPrice(0);
+                fetchMonthBill();
+                setEditNewProperty([]);
+                sampleRef.current.focus();
+                setEditBill({
+                  ...editBill,
+                  flag: false,
+                  id: "",
+                  isSampleChange: false,
+                });
+                setNewTransaction({
+                  pid: "",
+                  remark: "",
+                  price: "",
+                  paid: false,
+                });
+              }
+            });
+          }
         } else {
-          let removeProp = oldTransaction.properties.filter((ele, index) => {
-            if (defaultPropertyEditIndex.includes(index)) {
-              return ele;
-            }
-          });
+          ipcRenderer.send("addBill:load", updatedObj);
 
-          let addProperty = updatedObj.propertyList.filter((ele, index) => {
-            if (defaultPropertyEditIndex.includes(index)) {
-              return ele;
-            }
-          });
-
-          let obj = {
-            updateSave: {
-              ...updatedObj,
-              transactionId: transactionData.transactionId,
-              createdAt: moment(new Date()).format("YYYY-MM-DD"),
-            },
-            newEdit: editNewProperty.map((ele) => {
-              return { ...ele, pid: ele.pid.value, paid: ele.paid || false };
-            }),
-            isdefaultPropertyChange: editBill.isdefaultPropertyChange,
-            addProperty,
-            removeProp,
-          };
-
-          ipcRenderer.send("updateBill:load", obj);
-          ipcRenderer.on("updateBill:success", (e, data) => {
-            let parsedData = JSON.parse(data);
-
-            if (parsedData.success) {
-              toast.success("Bill Updated Successfully.");
-              fetchBill();
-              setTotalPrice(0);
-              fetchMonthBill();
-              setEditNewProperty([]);
-              sampleRef.current.focus();
-              setEditBill({
-                ...editBill,
-                flag: false,
-                id: "",
-                isSampleChange: false,
-              });
-            }
+          ipcRenderer.once("addBill:success", (e, data) => {
+            toast.success("Bill Added Successfully.");
+            fetchBill();
+            setTotalPrice(0);
+            fetchMonthBill();
+            setEditNewProperty([]);
+            setNewTransaction({ pid: "", remark: "", price: "", paid: false });
+            sampleRef.current.focus();
           });
         }
       } else {
-        ipcRenderer.send("addBill:load", updatedObj);
-        ipcRenderer.on("addBill:success", (e, data) => {
-          toast.success("Bill Added Successfully.");
-          fetchBill();
-          setTotalPrice(0);
-          fetchMonthBill();
-          sampleRef.current.focus();
-        });
+        setFormError(formError);
       }
-    } else {
-      setFormError(formError);
     }
   };
 
@@ -569,7 +844,7 @@ const SampleTransaction = (props) => {
       });
       setEditMode(false);
       setResult({});
-      ipcRenderer.on("updateResult:success", (e, data) => {
+      ipcRenderer.once("updateResult:success", (e, data) => {
         fetchBill();
       });
     } else {
@@ -577,7 +852,7 @@ const SampleTransaction = (props) => {
         ...result,
         createdAt: moment(new Date()).format("YYYY-MM-DD"),
       });
-      ipcRenderer.on("saveTestResult:success", (e, data) => {
+      ipcRenderer.once("saveTestResult:success", (e, data) => {
         setEditMode(false);
         setResult({});
         fetchBill();
@@ -682,7 +957,7 @@ const SampleTransaction = (props) => {
 
         ipcRenderer.send("deleteDefautProperty:load", idObj);
 
-        ipcRenderer.on("deleteDefautProperty:success", (e, data) => {
+        ipcRenderer.once("deleteDefautProperty:success", (e, data) => {
           let parsedData = JSON.parse(data);
 
           if (parsedData.success) {
@@ -760,13 +1035,23 @@ const SampleTransaction = (props) => {
   };
 
   const handleNewPropertyChange = (e) => {
-    let p = propertyList.find((ele) => e.value === ele._id);
+    setFormError({ addBtn: "" });
+    if (e.label === "select..") {
+      setNewTransaction({
+        pid: "",
+        remark: "",
+        price: "",
+        paid: false,
+      });
+    } else {
+      let p = propertyList.find((ele) => e.value === ele._id);
 
-    setNewTransaction({
-      ...newTransaction,
-      pid: { label: e.label, value: p.propertyId },
-      price: p.pprice,
-    });
+      setNewTransaction({
+        ...newTransaction,
+        pid: { label: e.label, value: p.propertyId },
+        price: p.pprice,
+      });
+    }
   };
 
   const handleNewPropertyRemark = (e) => {
@@ -910,6 +1195,8 @@ const SampleTransaction = (props) => {
 
     setPdfData(findData);
   };
+
+  console.log("new prope", newTransaction);
 
   return (
     <div className="row">
@@ -1175,6 +1462,10 @@ const SampleTransaction = (props) => {
               </div>
             </>
           )}
+
+          <span className="text-error">
+            {formError.addBtn && formError.addBtn}
+          </span>
 
           <div className="row">
             <div className="col">Total : {totalPrice}</div>

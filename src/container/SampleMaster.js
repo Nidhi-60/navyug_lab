@@ -26,7 +26,7 @@ const SampleMaster = (props) => {
   useEffect(() => {
     ipcRenderer.send("unit:load");
 
-    ipcRenderer.on("unit:success", (e, data) => {
+    ipcRenderer.once("unit:success", (e, data) => {
       setUnitOptions(JSON.parse(data));
     });
   }, []);
@@ -42,7 +42,7 @@ const SampleMaster = (props) => {
   const refetchSample = () => {
     ipcRenderer.send("sampleSearch:load");
 
-    ipcRenderer.on("sampleSearch:success", (e, data) => {
+    ipcRenderer.once("sampleSearch:success", (e, data) => {
       setSampleOptions(JSON.parse(data));
     });
   };
@@ -50,7 +50,7 @@ const SampleMaster = (props) => {
   const refetchProperty = () => {
     ipcRenderer.send("sampleSearchProperty:load");
 
-    ipcRenderer.on("sampleSearchProperty:success", (e, data) => {
+    ipcRenderer.once("sampleSearchProperty:success", (e, data) => {
       setSearchPropertyList(JSON.parse(data));
     });
   };
@@ -60,7 +60,7 @@ const SampleMaster = (props) => {
     setNewProperty([]);
     ipcRenderer.send("getSampleProperty:load", e.value);
 
-    ipcRenderer.on("getSampleProperty:success", (e, data) => {
+    ipcRenderer.once("getSampleProperty:success", (e, data) => {
       let parsedData = JSON.parse(data);
       setPropertyList(parsedData);
     });
@@ -133,7 +133,7 @@ const SampleMaster = (props) => {
 
     ipcRenderer.send("addMapping:load", updatedProperty);
 
-    ipcRenderer.on("addMapping:success", (e, data) => {
+    ipcRenderer.once("addMapping:success", (e, data) => {
       toast.success("Mapping Successfully.");
     });
   };
@@ -150,7 +150,7 @@ const SampleMaster = (props) => {
 
     ipcRenderer.send("deletePredefinedMapping:load", sendObj);
 
-    ipcRenderer.on("deletePredefinedMapping:success", (e, data) => {
+    ipcRenderer.once("deletePredefinedMapping:success", (e, data) => {
       toast.success("Mapping Deleted Successfully.");
 
       let updatedPropertyList = propertyList.filter(

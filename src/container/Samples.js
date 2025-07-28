@@ -39,7 +39,7 @@ const Samples = (props) => {
     if (!isedit.flag) {
       ipcRenderer.send("addSample:load", formatedData);
 
-      ipcRenderer.on("addSample:success", (e, data) => {
+      ipcRenderer.once("addSample:success", (e, data) => {
         let parsedData = JSON.parse(data);
 
         if (parsedData.success) {
@@ -62,7 +62,7 @@ const Samples = (props) => {
     } else {
       ipcRenderer.send("updateSample:load", formatedData);
 
-      ipcRenderer.on("updateSample:success", (e, data) => {
+      ipcRenderer.once("updateSample:success", (e, data) => {
         toast.success("Sample Updated Successfully.");
         refetchSample();
 
@@ -86,7 +86,7 @@ const Samples = (props) => {
   const refetchSample = () => {
     ipcRenderer.send("sampleList:load");
 
-    ipcRenderer.on("sampleList:success", (e, data) => {
+    ipcRenderer.once("sampleList:success", (e, data) => {
       setSampleList(JSON.parse(data));
     });
   };
@@ -108,7 +108,7 @@ const Samples = (props) => {
 
   const handleDelete = (id) => {
     ipcRenderer.send("deleteSample:load", { _id: id });
-    ipcRenderer.on("deleteSample:success", (e, data) => {
+    ipcRenderer.once("deleteSample:success", (e, data) => {
       toast.success("Sample Deleted Successfully.");
       refetchSample();
     });

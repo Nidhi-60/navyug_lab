@@ -898,7 +898,7 @@ ipcMain.on("pdfPrint", (e, htmlContent) => {
     </html>
   `;
 
-  printWindow.webContents.openDevTools();
+  // printWindow.webContents.openDevTools();
 
   printWindow.loadURL(
     "data:text/html;charset=utf-8," + encodeURIComponent(fullHtml)

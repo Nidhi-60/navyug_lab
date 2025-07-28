@@ -16,7 +16,7 @@ const AddressPrint = () => {
   const fetchCompanies = () => {
     ipcRenderer.send("searchParty:load");
 
-    ipcRenderer.on("searchParty:success", (e, data) => {
+    ipcRenderer.once("searchParty:success", (e, data) => {
       setPartyList(JSON.parse(data));
     });
   };
@@ -32,7 +32,7 @@ const AddressPrint = () => {
   const handleApplyFilter = () => {
     ipcRenderer.send("companySearch:load", company.value);
 
-    ipcRenderer.on("companySearch:success", (e, data) => {
+    ipcRenderer.once("companySearch:success", (e, data) => {
       let addressDetail = JSON.parse(data);
 
       setAddress(addressDetail[0]);

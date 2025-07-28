@@ -25,11 +25,11 @@ const App = () => {
   let userData = JSON.parse(localStorage.getItem("user"));
   let isAuth = false;
 
-  ipcRenderer.on("menu", (e, data) => {
+  ipcRenderer.once("menu", (e, data) => {
     setCurrentPage(data.LABEL);
   });
 
-  ipcRenderer.on("logout", (e) => {
+  ipcRenderer.once("logout", (e) => {
     localStorage.clear();
   });
 
@@ -65,7 +65,7 @@ const App = () => {
     if (formValid) {
       ipcRenderer.send("signin:load", signinDetail);
 
-      ipcRenderer.on("signin:success", (e, data) => {
+      ipcRenderer.once("signin:success", (e, data) => {
         let result = JSON.parse(data);
 
         if (result.success) {

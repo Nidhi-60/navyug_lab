@@ -394,3 +394,9 @@ dialog p{
       top: 12px;
       right: 12px;
     }
+
+
+
+  .text-error{
+    color: red;
+  }

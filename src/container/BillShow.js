@@ -31,7 +31,7 @@ const BillShow = () => {
   // useEffect(() => {
   //   ipcRenderer.send("searchParty:load");
 
-  //   ipcRenderer.on("searchParty:success", (e, data) => {
+  //   ipcRenderer.once("searchParty:success", (e, data) => {
   //     setPartyList(JSON.parse(data));
   //   });
   // }, []);
@@ -39,7 +39,7 @@ const BillShow = () => {
   useEffect(() => {
     ipcRenderer.send("accountSearchParty:load", filterData?.accountType?.value);
 
-    ipcRenderer.on("accountSearchParty:success", (e, data) => {
+    ipcRenderer.once("accountSearchParty:success", (e, data) => {
       setPartyList(JSON.parse(data));
     });
   }, [filterData.accountType.value]);
@@ -60,7 +60,7 @@ const BillShow = () => {
 
     ipcRenderer.send("report:load", updatedFilterData);
 
-    ipcRenderer.on("report:success", (e, data) => {
+    ipcRenderer.once("report:success", (e, data) => {
       let parsedData = JSON.parse(data);
 
       if (parsedData.length > 0) {

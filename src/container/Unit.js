@@ -30,7 +30,7 @@ const Unit = (props) => {
   const refetchUnit = () => {
     ipcRenderer.send("unit:load");
 
-    ipcRenderer.on("unit:success", (e, data) => {
+    ipcRenderer.once("unit:success", (e, data) => {
       setUnitList(JSON.parse(data));
     });
   };
@@ -38,7 +38,7 @@ const Unit = (props) => {
   const handleDelete = (id) => {
     ipcRenderer.send("deleteUnit:load", { uid: id });
 
-    ipcRenderer.on("deleteUnit:success", (e, data) => {
+    ipcRenderer.once("deleteUnit:success", (e, data) => {
       refetchUnit();
       toast.error("Unit Deleted Successfully.");
     });
@@ -73,7 +73,7 @@ const Unit = (props) => {
       if (isedit.flag) {
         ipcRenderer.send("updateUnit:load", obj);
 
-        ipcRenderer.on("updateUnit:success", (e, data) => {
+        ipcRenderer.once("updateUnit:success", (e, data) => {
           setUnitData({
             unitName: "",
             _id: "",
@@ -85,7 +85,7 @@ const Unit = (props) => {
       } else {
         ipcRenderer.send("addUnit:load", obj);
 
-        ipcRenderer.on("addUnit:success", (e, data) => {
+        ipcRenderer.once("addUnit:success", (e, data) => {
           setUnitData({
             unitName: "",
             _id: "",
